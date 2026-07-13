@@ -517,13 +517,16 @@
     </div>
 
     <div class="card">
-        <div class="card-title">期間を選んで検索</div>
-
+        <div class="card-title">クイック検索</div>
         <div class="quick-buttons">
             <button class="quick-btn" onclick="setQuickPeriod(0)">今日</button>
             <button class="quick-btn" onclick="setQuickPeriod(7)">1週間</button>
             <button class="quick-btn" onclick="setQuickPeriod(14)">2週間</button>
         </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">期間を選んで検索</div>
 
         <label style="font-size:12px; color:var(--muted-text);">開始日</label>
         <input type="date" id="start-date">
@@ -532,9 +535,9 @@
         <input type="date" id="end-date">
 
         <button class="btn btn-search" onclick="searchRange()">🔍 この期間を検索する</button>
-
-        <div id="range-results" class="range-results-box"></div>
     </div>
+
+    <div id="range-results" class="range-results-box"></div>
 
     <div class="data-source-notice">
         このアプリは<span class="source-link" onclick="openSourceModal()">コチラ</span>のデータを元に作成しております。
@@ -1018,6 +1021,11 @@
                 container.innerHTML = '<div class="empty-msg">条件を正しくセットしてください</div>';
                 return;
             }
+
+            // 検索実行時のフィードバック(効果音＋花火＋バイブ)
+            playSwoosh();
+            launchFireworks();
+            if (navigator.vibrate) navigator.vibrate(40);
 
             let start = new Date(startStr);
             const end = new Date(endStr);
