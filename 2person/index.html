@@ -271,13 +271,18 @@
         }
         .dual-date-row:first-of-type { margin-top: 0; }
         .dual-day-grid {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
             margin-bottom: 4px;
+            align-items: stretch;
         }
-        .dual-day-grid .person-block { margin-bottom: 0; padding: 10px; }
-        .dual-day-grid .day-card { margin-bottom: 0; padding: 10px; }
+        .dual-day-grid .person-block { margin-bottom: 0; padding: 8px; min-width: 0; }
+        .dual-day-grid .day-card { margin-bottom: 0; padding: 8px; }
+        .dual-day-grid .day-dial { font-size: 22px; margin-bottom: 6px; }
+        .dual-day-grid .day-header { flex-wrap: wrap; }
+        .dual-day-grid .day-box-val { font-size: 12px; word-break: break-word; }
+        .dual-day-grid .day-box-label { font-size: 9px; }
         .mini-badge {
             display: inline-block;
             font-size: 11px;
