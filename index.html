@@ -804,6 +804,25 @@
             return "平";
         }
 
+        /* =========================================================
+           ダイヤ番号の自動計算(学園前ダイヤ版と同じ仕組み)
+           基準日に基準ダイヤ番号を割り当て、そこから日数分だけ
+           番号を1つずつ進めていく(1〜TOTAL_DIALSをループ)という
+           前提で「今日は何番か」を計算する。
+           ※あくまで「プレースホルダー(薄いヒント)」として見せるだけで、
+           実際の値として自動入力はしない(共有ツールのため各自で確認・入力する)。
+           ========================================================= */
+        const BASE_DATE = new Date(2026, 6, 13); // 2026年7月13日(月) = 基準日
+        const BASE_DIAL = 8; // 基準日のダイヤ番号
+        const TOTAL_DIALS = 59; // 生駒ダイヤの総番号数(1〜59)
+
+        function calcAutoDial(targetDate) {
+            const t = new Date(targetDate);
+            t.setHours(0, 0, 0, 0);
+            const daysDiff = Math.round((t - BASE_DATE) / 86400000);
+            return ((BASE_DIAL - 1 + daysDiff) % TOTAL_DIALS + TOTAL_DIALS) % TOTAL_DIALS + 1;
+        }
+
         function findData(daiyaId, dayType) {
             const allDayMatch = ikomaDaiyaData.filter(d => d.id === daiyaId && d.dayType === "全");
             if (allDayMatch.length > 0) return allDayMatch;
@@ -1245,6 +1264,8 @@
         window.onload = function() {
             const savedTheme = localStorage.getItem('ba-theme') || 'dark';
             applyTheme(savedTheme);
+            // 今日のダイヤ番号を自動計算し、薄いプレースホルダーとして表示する
+            document.getElementById('daiya-number').placeholder = calcAutoDial(new Date());
             setQuickPeriodMonths(1); // 期間検索のデフォルトは1ヶ月
             searchToday();
             initServiceWorkerAndInstall(); // インストール導線・更新検知の初期化
