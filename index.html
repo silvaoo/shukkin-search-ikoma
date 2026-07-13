@@ -806,11 +806,10 @@
 
         /* =========================================================
            ダイヤ番号の自動計算(学園前ダイヤ版と同じ仕組み)
-           基準日に基準ダイヤ番号を割り当て、そこから日数分だけ
-           番号を1つずつ進めていく(1〜TOTAL_DIALSをループ)という
-           前提で「今日は何番か」を計算する。
-           ※あくまで「プレースホルダー(薄いヒント)」として見せるだけで、
-           実際の値として自動入力はしない(共有ツールのため各自で確認・入力する)。
+           1. calcAutoDial: 基準日(2026年7月13日=8番)から日数分ズレを
+              計算し、「今日は何番か」のヒント(プレースホルダー)を出す
+           2. calcDial: 実際に入力された「今日の番号」を起点に、
+              期間検索の対象日ごとの番号を計算する(1日+1、59を超えたら1に戻る)
            ========================================================= */
         const BASE_DATE = new Date(2026, 6, 13); // 2026年7月13日(月) = 基準日
         const BASE_DIAL = 8; // 基準日のダイヤ番号
@@ -827,6 +826,15 @@
             const allDayMatch = ikomaDaiyaData.filter(d => d.id === daiyaId && d.dayType === "全");
             if (allDayMatch.length > 0) return allDayMatch;
             return ikomaDaiyaData.filter(d => d.id === daiyaId && d.dayType === dayType);
+        }
+
+        /* 今日入力した番号を基準に、対象日のダイヤ番号を計算する
+           (実際の端末の「今日」からの日数差で計算するので、基準日が古くなってもズレない) */
+        function calcDial(target, todayDial) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const diff = Math.round((target - today) / 86400000);
+            return ((todayDial - 1 + diff) % TOTAL_DIALS + TOTAL_DIALS) % TOTAL_DIALS + 1;
         }
 
         function getTodayString() {
@@ -1020,9 +1028,10 @@
                 const isHol = isHoliday(start);
                 const isBon = isBonSpecial(start);
                 const currentDayType = getDayType(start);
-                const matches = findData(num, currentDayType);
+                const rotatedDial = calcDial(start, num);
+                const matches = findData(rotatedDial, currentDayType);
                 const dateLabel = `${start.getMonth()+1}/${start.getDate()}（${daysOfWeek[start.getDay()]}）`;
-                rows.push({ dateLabel, dayType: currentDayType, isHol, isBon, matches, dial: num });
+                rows.push({ dateLabel, dayType: currentDayType, isHol, isBon, matches, dial: rotatedDial });
                 start.setDate(start.getDate() + 1);
             }
 
