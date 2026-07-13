@@ -1068,6 +1068,9 @@
             </div>`;
 
             container.innerHTML = html;
+
+            // 検索結果が見えるように自動でスクロールする(学園前ダイヤ1人用と同じ挙動)
+            setTimeout(() => { container.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
         }
 
         /* 期間検索結果をテキストとしてクリップボードにコピーする */
