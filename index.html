@@ -131,7 +131,7 @@
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 16px;
-            border: 2px solid var(--border-color);
+            border: 1px solid var(--border-color);
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             transition: background-color 0.25s ease, border-color 0.25s ease;
         }
@@ -218,7 +218,7 @@
 
         /* 「今日のダイヤ番号を入力」カード全体をオレンジ枠で囲む(読み上げボタンまで含む) */
         .card-accent-yellow {
-            border: 3px solid var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
             box-shadow: 0 0 16px rgba(255, 212, 59, 0.25);
         }
 
@@ -978,6 +978,12 @@
         }
 
         function speakToday() {
+            // 読み上げ中なら停止して終了(トグル動作)
+            if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+                window.speechSynthesis.cancel();
+                return;
+            }
+
             const num = parseInt(document.getElementById('daiya-number').value);
             if (isNaN(num) || num < 1 || num > 59) return;
 
@@ -1002,7 +1008,6 @@
                 }
             });
 
-            window.speechSynthesis.cancel();
             const uttr = new SpeechSynthesisUtterance(speechText);
             uttr.lang = 'ja-JP';
             window.speechSynthesis.speak(uttr);
@@ -1088,6 +1093,11 @@
 
         /* 期間検索結果をまとめて読み上げる */
         function speakRangeResults() {
+            // 読み上げ中なら停止して終了(トグル動作)
+            if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+                window.speechSynthesis.cancel();
+                return;
+            }
             const rows = window._lastRangeRows;
             if (!rows || !rows.length) { showToast('先に検索してください'); return; }
             let text = '';
@@ -1105,7 +1115,6 @@
                     });
                 }
             });
-            window.speechSynthesis.cancel();
             const uttr = new SpeechSynthesisUtterance(text);
             uttr.lang = 'ja-JP';
             window.speechSynthesis.speak(uttr);
