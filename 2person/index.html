@@ -222,13 +222,21 @@
             box-shadow: 0 0 16px rgba(255, 212, 59, 0.25);
         }
 
+        /* 今日のダイヤ入力: 1人目/2人目を横並びにする(学A2と同じ形) */
+        .dual-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
         /* 2人同時検索用: 1人目/2人目のブロックを色分けして区別しやすくする */
         .person-block {
             border-radius: 10px;
-            padding: 12px;
+            padding: 10px;
             margin-bottom: 12px;
             border: 2px solid var(--border-color);
         }
+        .dual-inputs .person-block { margin-bottom: 0; }
         .person-block:last-of-type { margin-bottom: 0; }
         .person-block.person-1 { border-color: var(--accent-cyan); background: rgba(0, 210, 211, 0.05); }
         .person-block.person-2 { border-color: #ff6b9d; background: rgba(255, 107, 157, 0.05); }
@@ -237,9 +245,19 @@
             font-weight: bold;
             margin-bottom: 8px;
             color: var(--text-color);
+            text-align: center;
         }
         .person-block.person-1 .person-label { color: var(--accent-cyan); }
         .person-block.person-2 .person-label { color: #ff6b9d; }
+        .person-block input[type="number"] {
+            width: 100%;
+            font-size: 22px;
+            border-width: 2px;
+            border-color: inherit;
+            margin-bottom: 8px;
+        }
+        .person-block.person-1 input[type="number"] { border-color: var(--accent-cyan); }
+        .person-block.person-2 input[type="number"] { border-color: #ff6b9d; }
         .person-block .input-group { margin: 8px 0; }
         .person-block .btn { margin-top: 8px; padding: 10px; font-size: 14px; }
 
@@ -555,29 +573,23 @@
     <div class="card card-accent-yellow">
         <div class="card-title" id="today-title">本日 のダイヤ番号を入力</div>
 
-        <div class="person-block person-1">
-            <div class="person-label">👤 1人目</div>
-            <div class="input-group">
-                <span>今日は</span>
-                <input type="number" id="daiya-number-1" placeholder="8" min="1" max="59" oninput="onDaiyaInput(1)">
-                <span>番ダイヤ</span>
+        <div class="dual-inputs">
+            <div class="person-block person-1">
+                <div class="person-label">👤 1人目</div>
+                <input type="number" id="daiya-number-1" placeholder="8" min="1" max="59" inputmode="numeric" oninput="onDaiyaInput(1)">
+                <div id="today-result-1" class="result-box"></div>
             </div>
-            <div id="today-result-1" class="result-box"></div>
-            <button class="btn btn-speak" onclick="speakToday(1)">🔊 1人目の勤務を読み上げ</button>
+
+            <div class="person-block person-2">
+                <div class="person-label">👤 2人目</div>
+                <input type="number" id="daiya-number-2" placeholder="8" min="1" max="59" inputmode="numeric" oninput="onDaiyaInput(2)">
+                <div id="today-result-2" class="result-box"></div>
+            </div>
         </div>
 
-        <div class="person-block person-2">
-            <div class="person-label">👤 2人目</div>
-            <div class="input-group">
-                <span>今日は</span>
-                <input type="number" id="daiya-number-2" placeholder="8" min="1" max="59" oninput="onDaiyaInput(2)">
-                <span>番ダイヤ</span>
-            </div>
-            <div id="today-result-2" class="result-box"></div>
-            <button class="btn btn-speak" onclick="speakToday(2)">🔊 2人目の勤務を読み上げ</button>
-        </div>
+        <p style="text-align:center; font-size:12px; color:var(--muted-text); margin: 10px 0;">↑ それぞれ1〜59の番号を入力してください</p>
 
-        <p style="text-align:center; font-size:12px; color:var(--muted-text); margin-top:10px;">↑ それぞれ1〜59の番号を入力してください</p>
+        <button class="btn btn-speak" onclick="speakBothToday()">🔊 今日の2人の勤務を読み上げ</button>
     </div>
 
     <div class="card">
@@ -1012,9 +1024,10 @@
             resultEl.innerHTML = buildDayCardHtml(num, `本日 ${getTodayString()}`, currentDayType, isHol, isBon, matches);
         }
 
-        function speakToday(person) {
+        /* 指定した人物の今日の勤務を読み上げ用テキストに変換する */
+        function buildTodaySpeechText(person) {
             const num = parseInt(document.getElementById(`daiya-number-${person}`).value);
-            if (isNaN(num) || num < 1 || num > 59) return;
+            if (isNaN(num) || num < 1 || num > 59) return `${person}人目は番号が未入力です。`;
 
             const now = new Date();
             const isHol = isHoliday(now);
@@ -1022,11 +1035,11 @@
             const currentDayType = getDayType(now);
             const matches = findData(num, currentDayType);
 
-            if (matches.length === 0) return;
+            if (matches.length === 0) return `${person}人目、該当データなし。`;
 
-            let speechText = `${person}人目、生駒ダイヤ、${num}番。`;
-            if (isBon) speechText += "本日はお盆休み期間のため、土曜ダイヤで運行します。";
-            else if (isHol) speechText += "本日は祝日のため、日曜ダイヤで運行します。";
+            let speechText = `${person}人目、${num}番。`;
+            if (isBon) speechText += "お盆休みで土曜ダイヤ。";
+            else if (isHol) speechText += "祝日のため日曜ダイヤ。";
             matches.forEach((m, idx) => {
                 if(matches.length > 1) speechText += `パターン${idx + 1}。`;
                 if (m.start === "公休" || m.dayType === "全") {
@@ -1036,9 +1049,22 @@
                     speechText += `出勤、${m.start}。退勤、${m.end}。労働時間は ${m.workTime} です。`;
                 }
             });
+            return speechText;
+        }
 
+        function speakToday(person) {
+            const speechText = buildTodaySpeechText(person);
             window.speechSynthesis.cancel();
             const uttr = new SpeechSynthesisUtterance(speechText);
+            uttr.lang = 'ja-JP';
+            window.speechSynthesis.speak(uttr);
+        }
+
+        /* 1人目・2人目まとめて読み上げる(学A2と同じ「2人まとめてボタン」仕様) */
+        function speakBothToday() {
+            const text = `生駒ダイヤ、本日${getTodayString()}。` + buildTodaySpeechText(1) + buildTodaySpeechText(2);
+            window.speechSynthesis.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
             uttr.lang = 'ja-JP';
             window.speechSynthesis.speak(uttr);
         }
