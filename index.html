@@ -136,6 +136,12 @@
             transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
+        .today-clock-title {
+            font-size: 17px !important;
+            letter-spacing: 0.5px;
+        }
+        .clock-ss { font-size: 13px; color: var(--muted-text); font-weight: 700; }
+
         .card-title {
             font-size: 14px;
             color: var(--accent-yellow);
@@ -537,7 +543,7 @@
     </button>
 
     <div class="card card-accent-yellow">
-        <div class="card-title" id="today-title">本日 のダイヤ番号を入力</div>
+        <div class="card-title today-clock-title" id="today-title">本日は—</div>
         <div class="input-group">
             <span>今日は</span>
             <input type="number" id="daiya-number" placeholder="8" min="1" max="59" oninput="onDaiyaInput()">
@@ -1079,13 +1085,35 @@
             playSwoosh();
         }
 
+
+        /* ==== 本日の日付＋時刻(24時間表示・秒あり) ==== */
+        function updateClock(){
+            const el=document.getElementById('today-title');
+            if(!el)return;
+            const n=new Date();
+            const DWJ=['日','月','火','水','木','金','土'];
+            const hh=n.getHours();                                  // 24時間表示
+            const mm=String(n.getMinutes()).padStart(2,'0');
+            const ss=String(n.getSeconds()).padStart(2,'0');
+            el.innerHTML=`本日は${n.getMonth()+1}/${n.getDate()}(${DWJ[n.getDay()]}) ${hh}:${mm} <span class="clock-ss">${ss}</span>`;
+
+            // 日付が変わったら今日の勤務表示も作り直す
+            const key=toLocalISO(n);
+            if(window._clockDay && window._clockDay!==key){
+                searchToday();
+                const sd=document.getElementById('start-date');
+                if(sd && sd.value===window._clockDay) sd.value=toLocalISO(new Date());
+            }
+            window._clockDay=key;
+        }
+
         function searchToday() {
             const num = parseInt(document.getElementById('daiya-number').value);
             const titleEl = document.getElementById('today-title');
             const resultEl = document.getElementById('today-result');
             const now = new Date();
 
-            titleEl.innerText = `本日 ${getTodayString()} の勤務データ (生駒ダイヤ)`;
+            // タイトルは updateClock() が時計として毎秒更新する
 
             if (isNaN(num) || num < 1 || num > 59) {
                 resultEl.innerHTML = '<div class="empty-msg">1〜59の番号を入力してください</div>';
@@ -1428,6 +1456,7 @@
         }
 
         window.onload = function() {
+            updateClock(); setInterval(updateClock,1000); // 時計を開始
             const savedTheme = localStorage.getItem('ba-theme') || 'dark';
             applyTheme(savedTheme);
             // 今日のダイヤ番号を自動計算し、薄いプレースホルダーとして表示する
