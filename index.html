@@ -397,6 +397,7 @@
             opacity: 0;
             transition: opacity 0.3s;
             white-space: nowrap;
+          pointer-events: none; /* 見えていない時に下のボタン(更新バナー等)のタップを邪魔しないようにする */
         }
         .toast.show { opacity: 1; }
 
