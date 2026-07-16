@@ -143,6 +143,9 @@
         /* 秒も本体と同じ大きさ・同じ色にする */
 .clock-ss { font-size: inherit; color: inherit; font-weight: inherit; }
 
+        /* ヘッダーのダイヤ名だけテーマ色にして、アプリを見分けやすくする(サイズは据え置き) */
+        .dia-name { color: var(--accent-yellow); font-weight: 800; }
+
         .card-title {
             font-size: 14px;
             color: var(--accent-yellow);
@@ -527,7 +530,7 @@
     <header>
         <button id="share-button" onclick="shareApp()" aria-label="アプリを共有">📤</button>
         <div class="header-text">
-            <h1>🚌 出退勤検索くん (生駒ダイヤ)</h1>
+            <h1>🚌 出退勤検索くん <span class="dia-name">(生駒ダイヤ)</span></h1>
             <p>2026年3月14日改正対応版</p>
         </div>
         <button id="theme-toggle" onclick="toggleTheme()" aria-label="ダーク/ライト切り替え">🌙</button>
