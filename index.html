@@ -953,12 +953,29 @@
     <footer>
         <div>⚠ あくまでも目安としてお使いください。</div>
         <div>出退勤時間に誤りがあっても当方は責任を負いかねます。</div>
+        <div style="margin-top:8px;"><span class="source-link" onclick="openMemoList()">📝 保存したメモの一覧</span></div>
         <div style="margin-top:8px;"><span class="source-link" onclick="openGuide()">📖 本アプリの使い方と更新履歴</span></div>
         <div style="margin-top:8px;">
             <button id="notifyBtn" class="notify-btn" onclick="toggleNotify()">🔕 更新のお知らせ：オフ</button>
         </div>
         <div class="credit" style="margin-top:10px;">by AIタケタニ</div>
     </footer>
+
+<!-- メモ一覧 -->
+<div id="memoListModal" class="memolist-modal" onclick="if(event.target===this)closeMemoList()">
+  <div class="ml-box">
+    <div class="ml-head">
+      <h2>📝 メモ一覧</h2>
+      <button class="guide-close" onclick="closeMemoList()">✕ 閉じる</button>
+    </div>
+    <div class="ml-tabs">
+      <button class="ml-tab on" id="mlTabDate" onclick="switchMemoList('date')">日付のメモ</button>
+      <button class="ml-tab" id="mlTabDial" onclick="switchMemoList('dial')">ダイヤ番号のメモ</button>
+    </div>
+    <div class="ml-pane on" id="mlPaneDate"></div>
+    <div class="ml-pane" id="mlPaneDial"></div>
+  </div>
+</div>
 
 <!-- 使い方と更新履歴 -->
 <div id="guideModal" class="guide-modal" onclick="if(event.target===this)closeGuide()">
@@ -1034,7 +1051,17 @@
       </div>
 
       <div class="guide-step">
-        <h3>⑦ オフラインでも使えます</h3>
+        <h3>⑦ 書いたメモをまとめて見る</h3>
+        <p>フッターの「📝 保存したメモの一覧」を押すと、<b>これまでに書いたメモを全部まとめて見られます</b>。いつ・何番に書いたか探し回る必要はありません。</p>
+        <img src="images/guide-memolist.jpg" alt="メモ一覧">
+        <div class="guide-note">
+          「日付のメモ」と「ダイヤ番号のメモ」がタブで分かれています。日付のメモは古い順に並び、<b>過ぎた日には印</b>が付きます。<br>
+          その場で「編集」「削除」ができます。<b>🧹 過ぎた日のメモをまとめて削除</b>で、要らなくなった分を一度に片付けられます。
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <h3>⑧ オフラインでも使えます</h3>
         <p>一度オンラインで開いておけば、その後は圏外や機内モードでも起動できます。通信は使いません。</p>
         <div class="guide-note">「🔄 新しいバージョンがあります」と出たらタップしてください。最新のダイヤ表に更新されます。</div>
       </div>
@@ -1042,6 +1069,10 @@
 
     <!-- ===== 更新履歴 ===== -->
     <div class="guide-pane" id="paneLog">
+      <div class="log-item">
+        <div class="log-date">2026/07/17</div>
+        <div class="log-body"><span class="tag tag-new">新機能</span>「📝 保存したメモの一覧」を追加。これまでに書いたメモを一覧で確認でき、その場で編集・削除もできます。過ぎた日のメモはまとめて片付けられます。</div>
+      </div>
       <div class="log-item">
         <div class="log-date">2026/07/17</div>
         <div class="log-body"><span class="tag tag-new">新機能</span>検索結果を「📅 カレンダーで見る」を追加。1ヶ月分のダイヤ番号と出退勤時間が一目で分かります。マスをタップすると大きく表示され、分割勤務の詳しい時間も読めます。</div>
@@ -1633,7 +1664,7 @@
            ダイヤ改正や新機能を追加した時だけ notify を true にして message を書く。
            細かい不具合修正の時は notify:false のままにしておけば、通知は出ず黙って更新される。 */
         const RELEASE = {
-          id: 'ikoma-2026-07-16-cal-rescal',   // お知らせの識別子(内容を変えたらこれも変える)
+          id: 'ikoma-2026-07-16-cal-rescal-memolist',   // お知らせの識別子(内容を変えたらこれも変える)
           notify: true,              // ダイヤ改正・新機能の時だけ true にする
           message: '更新しました！詳しくは更新履歴をご覧下さい。'
         };
@@ -1664,6 +1695,136 @@
         }
 
         /* ==== 使い方と更新履歴モーダル ==== */
+        /* ==== メモ一覧 ====
+           保存したメモを日付・ダイヤ番号ごとに一覧で見て、その場で直せるようにする。
+           検索して探さなくても、どの日に何を書いたかが分かるようにするのが目的。 */
+        function openMemoList(){
+          renderMemoList();
+          document.getElementById('memoListModal').classList.add('active');
+          document.body.style.overflow='hidden';
+        }
+        function closeMemoList(){
+          document.getElementById('memoListModal').classList.remove('active');
+          document.body.style.overflow='';
+        }
+        function switchMemoList(which){
+          const isDate=which==='date';
+          document.getElementById('mlPaneDate').classList.toggle('on',isDate);
+          document.getElementById('mlPaneDial').classList.toggle('on',!isDate);
+          document.getElementById('mlTabDate').classList.toggle('on',isDate);
+          document.getElementById('mlTabDial').classList.toggle('on',!isDate);
+          document.getElementById('memoListModal').scrollTop=0;
+        }
+        function renderMemoList(){
+          const t=new Date();t.setHours(0,0,0,0);
+          const todayIso=toLocalISO(t);
+
+          // --- 日付のメモ（日付順。過ぎた日は薄く表示する） ---
+          const dm=loadMemos(MEMO_DATE_KEY);
+          const dkeys=Object.keys(dm).sort();
+          let h='';
+          if(dkeys.length===0){
+            h='<div class="ml-empty">日付のメモはまだありません。<br>検索結果の「📝 メモを追加」から書けます。</div>';
+          }else{
+            const past=dkeys.filter(k=>k<todayIso).length;
+            h=`<div class="ml-count">${dkeys.length}件${past?`（うち過ぎた日 ${past}件）`:''}</div>`;
+            dkeys.forEach(k=>{
+              const d=new Date(k+'T00:00:00');
+              const isPast=k<todayIso;
+              const label=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${['日','月','火','水','木','金','土'][d.getDay()]}）`;
+              h+=`<div class="ml-item${isPast?' past':''}" id="ml-d-${k}">
+                <div class="ml-top">
+                  <div class="ml-key">${label}${isPast?'<span class="ml-sub">過ぎた日</span>':(k===todayIso?'<span class="ml-sub">今日</span>':'')}</div>
+                  <div class="ml-acts">
+                    <button class="ml-act" onclick="editMemoItem('date','${k}')">編集</button>
+                    <button class="ml-act del" onclick="deleteMemoItem('date','${k}')">削除</button>
+                  </div>
+                </div>
+                <div class="ml-text">${escapeHtml(dm[k])}</div>
+              </div>`;
+            });
+            if(dkeys.some(k=>k<todayIso)){
+              h+='<button class="ml-clean" onclick="cleanPastMemos()">🧹 過ぎた日のメモをまとめて削除</button>';
+            }
+          }
+          document.getElementById('mlPaneDate').innerHTML=h;
+
+          // --- ダイヤ番号のメモ（番号順） ---
+          const lm=loadMemos(MEMO_DIAL_KEY);
+          const lkeys=Object.keys(lm).sort((a,b)=>Number(a)-Number(b));
+          let h2='';
+          if(lkeys.length===0){
+            h2='<div class="ml-empty">ダイヤ番号のメモはまだありません。<br>検索結果の「📝 メモを追加」から書けます。</div>';
+          }else{
+            h2=`<div class="ml-count">${lkeys.length}件</div>`;
+            lkeys.forEach(k=>{
+              h2+=`<div class="ml-item dial" id="ml-l-${k}">
+                <div class="ml-top">
+                  <div class="ml-key">${k} 番ダイヤ<span class="ml-sub">この番号の日すべてに出ます</span></div>
+                  <div class="ml-acts">
+                    <button class="ml-act" onclick="editMemoItem('dial','${k}')">編集</button>
+                    <button class="ml-act del" onclick="deleteMemoItem('dial','${k}')">削除</button>
+                  </div>
+                </div>
+                <div class="ml-text">${escapeHtml(lm[k])}</div>
+              </div>`;
+            });
+          }
+          document.getElementById('mlPaneDial').innerHTML=h2;
+        }
+        /* 一覧の中で直接編集する */
+        function editMemoItem(type,key){
+          const id=(type==='date'?'ml-d-':'ml-l-')+key;
+          const box=document.getElementById(id);
+          if(!box||box.querySelector('.ml-edit'))return;
+          const cur=(type==='date'?loadMemos(MEMO_DATE_KEY):loadMemos(MEMO_DIAL_KEY))[key]||'';
+          const ed=document.createElement('div');
+          ed.className='ml-edit';
+          ed.innerHTML=`<textarea rows="3" id="ml-in-${type}-${key}">${escapeHtml(cur)}</textarea>
+            <div class="ml-edit-acts">
+              <button class="memo-act memo-save" onclick="saveMemoItem('${type}','${key}')">💾 保存</button>
+              <button class="memo-act memo-close" onclick="renderMemoList()">✕ 取消</button>
+            </div>`;
+          box.querySelector('.ml-text').style.display='none';
+          box.appendChild(ed);
+          document.getElementById(`ml-in-${type}-${key}`).focus();
+        }
+        function saveMemoItem(type,key){
+          const v=document.getElementById(`ml-in-${type}-${key}`).value.trim();
+          const store=type==='date'?MEMO_DATE_KEY:MEMO_DIAL_KEY;
+          const obj=loadMemos(store);
+          if(v) obj[key]=v; else delete obj[key];   // 空にして保存すれば削除になる
+          saveMemos(store,obj);
+          showToast(v?'💾 メモを保存しました':'🗑 メモを削除しました');
+          renderMemoList();
+          refreshMemoViews();   // 検索結果側の表示も合わせる
+        }
+        function deleteMemoItem(type,key){
+          const label=type==='date'?`${key} のメモ`:`${key}番ダイヤのメモ`;
+          if(!confirm(`${label}を削除します。よろしいですか？`))return;
+          const store=type==='date'?MEMO_DATE_KEY:MEMO_DIAL_KEY;
+          const obj=loadMemos(store);
+          delete obj[key];
+          saveMemos(store,obj);
+          showToast('🗑 メモを削除しました');
+          renderMemoList();
+          refreshMemoViews();
+        }
+        /* 過ぎた日のメモをまとめて片付ける */
+        function cleanPastMemos(){
+          const t=new Date();t.setHours(0,0,0,0);
+          const todayIso=toLocalISO(t);
+          const obj=loadMemos(MEMO_DATE_KEY);
+          const past=Object.keys(obj).filter(k=>k<todayIso);
+          if(past.length===0)return;
+          if(!confirm(`過ぎた日のメモ ${past.length}件をまとめて削除します。よろしいですか？`))return;
+          past.forEach(k=>delete obj[k]);
+          saveMemos(MEMO_DATE_KEY,obj);
+          showToast(`🧹 ${past.length}件のメモを削除しました`);
+          renderMemoList();
+          refreshMemoViews();
+        }
+
         function openGuide(){
           document.getElementById('guideModal').classList.add('active');
           document.body.style.overflow='hidden';   // 背面のスクロールを止める
