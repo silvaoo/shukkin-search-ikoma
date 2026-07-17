@@ -207,6 +207,85 @@
         .tag-new { background: rgba(255,212,59,0.18); color: var(--accent-yellow); }
         .tag-fix { background: rgba(255,107,107,0.15); color: #ff6b6b; }
         .tag-up  { background: rgba(0,210,211,0.15); color: var(--accent-cyan); }
+        .mydial-note {
+          margin-top: 8px; font-size: 12.5px; color: var(--text-color); text-align: center;
+          line-height: 1.7; font-weight: 600;
+        }
+        .mydial-forget {
+          color: var(--accent-yellow); text-decoration: underline; cursor: pointer;
+          margin-left: 6px; font-weight: 700; white-space: nowrap;
+        }
+        /* ==== 指定して検索・カレンダー ==== */
+        .range-label {
+          margin-top: 10px; text-align: center; font-size: 12px;
+          color: var(--muted-text); font-weight: 700;
+        }
+        .range-label.set { color: var(--accent-yellow); }
+
+        .cal-modal {
+          display: none; position: fixed; inset: 0; z-index: 10002;
+          background: rgba(0,0,0,0.92); padding: 14px; overflow-y: auto;
+        }
+        .cal-modal.active { display: block; }
+        .cal-inner {
+          max-width: 400px; margin: 0 auto;
+          background: var(--card-bg); border: 1px solid var(--border-color);
+          border-radius: 14px; padding: 14px;
+        }
+        .cal-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .cal-title { font-size: 14px; font-weight: 800; color: var(--text-color); }
+        .cal-x {
+          background: var(--input-bg); border: 1px solid var(--border-color); color: var(--muted-text);
+          border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 800; cursor: pointer;
+        }
+        .cal-hint {
+          font-size: 10px; color: var(--muted-text); text-align: center; margin-bottom: 10px;
+          line-height: 1.5;
+        }
+        .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .cal-arrow {
+          background: none; border: 1px solid var(--border-color); color: var(--text-color);
+          border-radius: 6px; width: 36px; height: 32px; font-size: 16px; font-weight: 800; cursor: pointer;
+        }
+        .cal-month { font-size: 15px; font-weight: 800; color: var(--text-color); }
+
+        /* minmax(0,1fr) にしないと中身の最小幅で列が広がり、横にはみ出してしまう */
+        .cal-dw { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 2px; margin-bottom: 2px; }
+        .cal-dw div { text-align: center; font-size: 10px; font-weight: 700; color: var(--muted-text); padding: 3px 0; }
+        .cal-dw .sun { color: #d96b6b; }
+        .cal-dw .sat { color: #6b8fd9; }
+
+        .cal-grid {
+          display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 2px;
+        }
+        .cal-day {
+          aspect-ratio: 1 / 1; min-width: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: var(--input-bg); border: 1px solid transparent;
+          border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--text-color);
+          cursor: pointer; user-select: none; -webkit-user-select: none;
+        }
+        .cal-day.empty { background: none; cursor: default; }
+        .cal-day.sun { color: #d96b6b; }
+        .cal-day.sat { color: #6b8fd9; }
+        .cal-day.today { border-color: var(--muted-text); font-weight: 800; }
+        .cal-day.inrange { background: rgba(255,255,255,0.10); }
+        .cal-day.edge { background: var(--accent-yellow); color: #332b00; font-weight: 800; }
+
+        .cal-sel {
+          margin-top: 10px; text-align: center; font-size: 12px; font-weight: 700;
+          color: var(--text-color); padding: 8px;
+          background: var(--input-bg); border-radius: 8px;
+        }
+        .cal-actions { display: flex; gap: 6px; margin-top: 10px; }
+        .cal-btn {
+          flex: 1; padding: 11px 4px; border-radius: 8px; font-size: 12px;
+          font-weight: 800; cursor: pointer; border: 1px solid var(--border-color);
+          background: var(--input-bg); color: var(--muted-text);
+        }
+        .cal-ok { background: var(--accent-yellow); color: #332b00; border-color: var(--accent-yellow); flex: 1.3; }
+        .cal-ok:disabled { opacity: 0.35; cursor: default; }
+
         .card-title {
             font-size: 14px;
             color: var(--accent-yellow);
@@ -279,7 +358,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
-        .btn-speak { background: var(--btn-green); }
+        .btn-speak { background: var(--btn-green); padding: 8px; font-size: 12px; margin-top: 8px; }
         .btn-search { background: var(--btn-purple); }
 
         /* 「今日のダイヤ番号を入力」カード全体をオレンジ枠で囲む(読み上げボタンまで含む) */
@@ -618,6 +697,10 @@
         <p style="text-align:center; font-size:12px; color:var(--muted-text); margin-bottom:12px;">↑ 1〜59の番号を入力してください</p>
 
         <div id="today-result" class="result-box"></div>
+        <div class="mydial-note" id="myDialNote" style="display:none;">
+            ✅ この番号を保存しました。明日からは自動で1つ進みます。
+            <span class="mydial-forget" onclick="forgetMyDial()">保存を消す</span>
+        </div>
 
         <button class="btn btn-speak" onclick="speakToday()">🔊 今日の勤務を読み上げ</button>
     </div>
@@ -632,15 +715,43 @@
     </div>
 
     <div class="card">
-        <div class="card-title">期間を選んで検索</div>
+        <div class="card-title">指定して検索</div>
+        <button class="btn btn-search" onclick="openCal()">📅 指定して検索</button>
+        <div class="range-label" id="rangeLabel">期間：未指定</div>
+        <!-- 選んだ期間の保持用（画面には出さないが、他の処理がここを参照する） -->
+        <input type="hidden" id="start-date">
+        <input type="hidden" id="end-date">
+    </div>
 
-        <label style="font-size:12px; color:var(--muted-text);">開始日</label>
-        <input type="date" id="start-date">
+    <!-- 全画面カレンダー（開始日→終了日をタップで選ぶ） -->
+    <div id="calModal" class="cal-modal">
+      <div class="cal-inner">
+        <div class="cal-top">
+          <div class="cal-title">📅 日付を指定</div>
+          <button class="cal-x" onclick="closeCal()">✕</button>
+        </div>
 
-        <label style="font-size:12px; color:var(--muted-text);">終了日</label>
-        <input type="date" id="end-date">
+        <div class="cal-hint" id="calHint">1回目のタップ＝開始日 / 2回目のタップ＝終了日<br>同じ日を2回タップすると、その日1日だけになります</div>
 
-        <button class="btn btn-search" onclick="searchRange()">🔍 この期間を検索する</button>
+        <div class="cal-nav">
+          <button class="cal-arrow" onclick="calMove(-1)">‹</button>
+          <div class="cal-month" id="calMonth"></div>
+          <button class="cal-arrow" onclick="calMove(1)">›</button>
+        </div>
+
+        <div class="cal-dw">
+          <div class="sun">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="sat">土</div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+
+        <div class="cal-sel" id="calSel">開始日を選んでください</div>
+
+        <div class="cal-actions">
+          <button class="cal-btn cal-today" onclick="calToday()">今日に戻る</button>
+          <button class="cal-btn cal-clear" onclick="calClear()">選び直す</button>
+          <button class="cal-btn cal-ok" id="calOk" onclick="applyCal()">設定</button>
+        </div>
+      </div>
     </div>
 
     <div id="range-results" class="range-results-box"></div>
@@ -678,23 +789,38 @@
         <h3>① 今日のダイヤ番号を入れる</h3>
         <p>一番上の枠に、今日の自分のダイヤ番号(1〜59)を入れます。入れるとすぐ下に今日の勤務が出ます。</p>
         <img src="images/guide-1.jpg" alt="ダイヤ番号を入力する画面">
-        <div class="guide-note">上に出ている日付と時刻は自動で動きます。薄く出ている数字は目安なので、必ず自分の番号を入れてください。</div>
+        <div class="guide-note">
+          <b>一度入れたら保存されます。</b>明日からは開くだけで自動的に1つ進んだ番号が入っているので、毎回入力する必要はありません。<br>
+          番号がズレた時や、保存を消したい時は「保存を消す」を押して入れ直してください。<br>
+          ※ 保存先はこの端末の中だけです。同僚の番号と混ざることはありません。
+        </div>
       </div>
 
       <div class="guide-step">
-        <h3>② 期間を選んで検索する</h3>
-        <p>「今日 / 1週間 / 2週間」を押すか、日付を選んで検索します。入れた番号を基準に、翌日以降は1日ずつ番号が進んだ状態で表示されます。</p>
-        <img src="images/guide-2.jpg" alt="クイック検索と期間検索">
+        <h3>② クイック検索</h3>
+        <p>「今日 / 1週間 / 2週間」を押すと、すぐに結果が出ます。入れた番号を基準に、翌日以降は1日ずつ番号が進んだ状態で表示されます。</p>
+        <img src="images/guide-2.jpg" alt="クイック検索と指定して検索">
       </div>
 
       <div class="guide-step">
-        <h3>③ 検索結果を見る</h3>
+        <h3>③ 指定して検索（カレンダー）</h3>
+        <p>「📅 指定して検索」を押すとカレンダーが開きます。<b>1回目のタップで開始日、2回目のタップで終了日</b>。その間の期間がまとめて検索できます。</p>
+        <img src="images/guide-cal.jpg" alt="カレンダーで期間を指定する">
+        <div class="guide-note">
+          同じ日を2回タップすれば、その日1日だけを調べられます。<br>
+          ‹ › で月を移動できるので、月をまたいだ期間も指定できます。<br><br>
+          「設定」を押すとカレンダーが閉じ、検索結果が出ます。画面が自動で下まで流れて、最終日とコピー・読み上げボタンが見える位置で止まります。
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <h3>④ 検索結果を見る</h3>
         <p>日ごとに、ダイヤ番号・出退勤時間・労働時間が並びます。公休の日は「公休」と出ます。</p>
         <img src="images/guide-3.jpg" alt="検索結果の見方">
       </div>
 
       <div class="guide-step">
-        <h3>④ メモを残す</h3>
+        <h3>⑤ メモを残す</h3>
         <p>各日の「📝 メモを追加」から、2種類のメモが書けます。💾保存・🗑削除もその場でできます。</p>
         <img src="images/guide-4.jpg" alt="メモ機能">
         <div class="guide-note">
@@ -705,7 +831,7 @@
       </div>
 
       <div class="guide-step">
-        <h3>⑤ オフラインでも使えます</h3>
+        <h3>⑥ オフラインでも使えます</h3>
         <p>一度オンラインで開いておけば、その後は圏外や機内モードでも起動できます。通信は使いません。</p>
         <div class="guide-note">「🔄 新しいバージョンがあります」と出たらタップしてください。最新のダイヤ表に更新されます。</div>
       </div>
@@ -713,6 +839,14 @@
 
     <!-- ===== 更新履歴 ===== -->
     <div class="guide-pane" id="paneLog">
+      <div class="log-item">
+        <div class="log-date">2026/07/16</div>
+        <div class="log-body"><span class="tag tag-new">新機能</span>ダイヤ番号を保存するようにしました。一度入れれば、翌日からは自動で1つ進んだ番号が入るので毎回の入力が不要になります。</div>
+      </div>
+      <div class="log-item">
+        <div class="log-date">2026/07/16</div>
+        <div class="log-body"><span class="tag tag-new">新機能</span>「指定して検索」を追加。カレンダーで1回目のタップ＝開始日、2回目のタップ＝終了日を選ぶだけで、その期間をまとめて検索できます。</div>
+      </div>
       <div class="log-item">
         <div class="log-date">2026/07/16</div>
         <div class="log-body"><span class="tag tag-up">改善</span>アプリを見分けやすくするため、ヘッダーのダイヤ名を色分け表示にしました。</div>
@@ -1228,6 +1362,7 @@
 
         /* ===== ダイヤ番号入力時のハンドラ: 検索結果表示 + 花火 + 効果音 ===== */
         function onDaiyaInput() {
+            saveMyDial();   // 入れた番号を保存する
             searchToday();
             launchFireworks();
             playSwoosh();
@@ -1248,6 +1383,7 @@
             // 日付が変わったら今日の勤務表示も作り直す
             const key=toLocalISO(n);
             if(window._clockDay && window._clockDay!==key){
+                restoreMyDial();   // 日付が変わったら番号も1つ進める
                 searchToday();
                 const sd=document.getElementById('start-date');
                 if(sd && sd.value===window._clockDay) sd.value=toLocalISO(new Date());
@@ -1286,8 +1422,8 @@
            ダイヤ改正や新機能を追加した時だけ notify を true にして message を書く。
            細かい不具合修正の時は notify:false のままにしておけば、通知は出ず黙って更新される。 */
         const RELEASE = {
-          id: 'ikoma-2026-07-16',   // お知らせの識別子(内容を変えたらこれも変える)
-          notify: false,        // ダイヤ改正・新機能の時だけ true にする
+          id: 'ikoma-2026-07-16-cal',   // お知らせの識別子(内容を変えたらこれも変える)
+          notify: true,              // ダイヤ改正・新機能の時だけ true にする
           message: '更新しました！詳しくは更新履歴をご覧下さい。'
         };
         const NOTIFIED_KEY='ikoma-last-notified';
@@ -1333,6 +1469,226 @@
           document.getElementById('tabLog').classList.toggle('on',!use);
           document.getElementById('guideModal').scrollTop=0;
         }
+
+        /* ==== 全画面カレンダー ====
+           1回目のタップで開始日、2回目で終了日。同じ日を2回タップすればその日だけになる。 */
+        let _calView=null;      // 表示中の月
+        let _selStart=null;     // 選択した開始日(YYYY-MM-DD)
+        let _selEnd=null;       // 選択した終了日(YYYY-MM-DD)
+
+        function openCal(){
+          const dial=parseInt(document.getElementById('daiya-number').value);
+          if(!dial||dial<1||dial>59){showToast('先に今日のダイヤ番号を入力してください');return;}
+          const t=new Date();t.setHours(0,0,0,0);
+          // デフォルトは今日
+          if(!_selStart){ _selStart=toLocalISO(t); _selEnd=toLocalISO(t); }
+          _calView=new Date(_selStart+'T00:00:00');
+          renderCal();
+          document.getElementById('calModal').classList.add('active');
+          document.body.style.overflow='hidden';
+        }
+        function closeCal(){
+          document.getElementById('calModal').classList.remove('active');
+          document.body.style.overflow='';
+        }
+        function calMove(n){
+          _calView=addMonths(_calView,n);
+          renderCal();
+        }
+        function calToday(){
+          const t=new Date();t.setHours(0,0,0,0);
+          _calView=new Date(t);
+          _selStart=toLocalISO(t); _selEnd=toLocalISO(t);
+          renderCal();
+        }
+        function calClear(){
+          _selStart=null; _selEnd=null;
+          renderCal();
+        }
+        /* 日付をタップした時 */
+        function calTap(iso){
+          if(!_selStart || (_selStart && _selEnd)){
+            _selStart=iso; _selEnd=null;             // 1回目: 開始日
+          }else if(iso < _selStart){
+            _selStart=iso; _selEnd=null;             // 開始日より前を選んだら選び直し
+          }else{
+            _selEnd=iso;                             // 2回目: 終了日(同じ日ならその日だけ)
+          }
+          beep(880,60,0);
+          if(navigator.vibrate)navigator.vibrate(15);
+          renderCal();
+        }
+
+        function renderCal(){
+          const y=_calView.getFullYear(), m=_calView.getMonth();
+          document.getElementById('calMonth').textContent=`${y}年 ${m+1}月`;
+          const first=new Date(y,m,1);
+          const days=new Date(y,m+1,0).getDate();
+          const t=new Date();t.setHours(0,0,0,0);
+          const todayIso=toLocalISO(t);
+          let html='';
+          for(let i=0;i<first.getDay();i++) html+='<div class="cal-day empty"></div>';
+          for(let d=1;d<=days;d++){
+            const dt=new Date(y,m,d);
+            const iso=toLocalISO(dt);
+            const dw=dt.getDay();
+            let cls='cal-day';
+            if(dw===0)cls+=' sun'; if(dw===6)cls+=' sat';
+            if(iso===todayIso)cls+=' today';
+            if(_selStart&&_selEnd&&iso>_selStart&&iso<_selEnd)cls+=' inrange';
+            if(iso===_selStart||iso===_selEnd)cls+=' edge';
+            html+=`<div class="${cls}" onclick="calTap('${iso}')">${d}</div>`;
+          }
+          document.getElementById('calGrid').innerHTML=html;
+
+          // 選択状況の表示
+          const sel=document.getElementById('calSel');
+          const ok=document.getElementById('calOk');
+          if(!_selStart){
+            sel.textContent='開始日を選んでください'; ok.disabled=true;
+          }else if(!_selEnd){
+            sel.textContent=`${fmtJp(_selStart)} 〜 （終了日を選ぶ）`; ok.disabled=true;
+          }else if(_selStart===_selEnd){
+            sel.textContent=`${fmtJp(_selStart)} の1日だけ`; ok.disabled=false;
+          }else{
+            const n=Math.round((new Date(_selEnd)-new Date(_selStart))/86400000)+1;
+            sel.textContent=`${fmtJp(_selStart)} 〜 ${fmtJp(_selEnd)}（${n}日間）`; ok.disabled=false;
+          }
+        }
+        function fmtJp(iso){
+          const d=new Date(iso+'T00:00:00');
+          return `${d.getMonth()+1}/${d.getDate()}(${['日','月','火','水','木','金','土'][d.getDay()]})`;
+        }
+
+        /* 「設定」を押した時: カレンダーを閉じて、バーン！と鳴らして検索する */
+        function applyCal(){
+          if(!_selStart)return;
+          if(!_selEnd)_selEnd=_selStart;
+          const from=new Date(_selStart+'T00:00:00');
+          const to=new Date(_selEnd+'T00:00:00');
+          if((to-from)/86400000>120){showToast('検索は最大120日間までです');return;}
+          const dial=parseInt(document.getElementById('daiya-number').value);
+          if(!dial||dial<1||dial>59){showToast('今日のダイヤ番号を入力してください');return;}
+
+          document.getElementById('start-date').value=_selStart;
+          document.getElementById('end-date').value=_selEnd;
+          updateRangeLabel();
+          closeCal();
+
+          boomSound();                       // バーン！
+          if(navigator.vibrate)navigator.vibrate([60,40,90]);
+          launchFireworks();
+          searchRange();                     // 既存の期間検索を実行する
+          autoScrollResults();               // 上から下まで自動で流す
+        }
+        function updateRangeLabel(){
+          const el=document.getElementById('rangeLabel');
+          if(!el)return;
+          if(_selStart&&_selEnd){
+            el.textContent = _selStart===_selEnd
+              ? `期間：${fmtJp(_selStart)} の1日`
+              : `期間：${fmtJp(_selStart)} 〜 ${fmtJp(_selEnd)}`;
+            el.classList.add('set');
+          }else{
+            el.textContent='期間：未指定'; el.classList.remove('set');
+          }
+        }
+
+        /* 「バーン！」という低い破裂音（余韻を長めに） */
+        function boomSound(){
+          try{
+            const ctx=getAudioCtx(); if(!ctx)return;
+            const now=ctx.currentTime;
+            // 低音のドン（ゆっくり下がって長く残る）
+            const o=ctx.createOscillator(), g=ctx.createGain();
+            o.type='sine'; o.frequency.setValueAtTime(200,now);
+            o.frequency.exponentialRampToValueAtTime(32,now+1.1);
+            g.gain.setValueAtTime(0.55,now);
+            g.gain.exponentialRampToValueAtTime(0.001,now+1.4);
+            o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+1.5);
+            // 少し高めの余韻を重ねて厚みを出す
+            const o2=ctx.createOscillator(), g2=ctx.createGain();
+            o2.type='triangle'; o2.frequency.setValueAtTime(90,now);
+            o2.frequency.exponentialRampToValueAtTime(28,now+1.2);
+            g2.gain.setValueAtTime(0.3,now);
+            g2.gain.exponentialRampToValueAtTime(0.001,now+1.3);
+            o2.connect(g2); g2.connect(ctx.destination); o2.start(now); o2.stop(now+1.4);
+            // 破裂のノイズ（じわっと消える）
+            const len=Math.floor(ctx.sampleRate*1.0);
+            const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+            const data=buf.getChannelData(0);
+            for(let i=0;i<len;i++) data[i]=(Math.random()*2-1)*Math.pow(1-i/len,1.6);
+            const src=ctx.createBufferSource(); src.buffer=buf;
+            const ng=ctx.createGain(); ng.gain.setValueAtTime(0.4,now);
+            ng.gain.exponentialRampToValueAtTime(0.001,now+0.9);
+            src.connect(ng); ng.connect(ctx.destination); src.start(now);
+          }catch(e){}
+        }
+
+        /* 検索結果を上から下まで自動でスクロールし、最後に終了日が見えるようにする */
+        function autoScrollResults(){
+          const el=document.getElementById('range-results');
+          if(!el)return;
+          const startY=el.getBoundingClientRect().top+window.scrollY-8;
+          window.scrollTo({top:startY,behavior:'auto'});   // まず結果の先頭へ
+          setTimeout(()=>{
+            const endY=el.getBoundingClientRect().bottom+window.scrollY-window.innerHeight+16;
+            const goal=Math.max(endY,startY);
+            if(goal<=startY+4)return;                      // 1画面で収まる時は動かさない
+            const dist=goal-startY;
+            // 長さに応じて時間を変える(短すぎ・長すぎを防ぐ)
+            const dur=Math.min(4000,Math.max(1200,dist*1.1));
+            const t0=performance.now();
+            function step(now){
+              const p=Math.min(1,(now-t0)/dur);
+              const e=p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;   // ゆっくり始まってゆっくり止まる
+              window.scrollTo(0,startY+dist*e);
+              if(p<1)requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+          },450);
+        }
+
+        /* ==== 自分のダイヤ番号を保存して、毎日自動で進める ====
+           一度入力すれば、翌日以降は開くだけで「今日の番号」に自動更新される。
+           保存先はこの端末の中だけなので、同僚の番号と混ざることはない。 */
+        const MYDIAL_KEY='ikoma-my-dial';
+
+        function saveMyDial(){
+          const v=parseInt(document.getElementById('daiya-number').value);
+          if(!v||v<1||v>59)return;
+          try{
+            localStorage.setItem(MYDIAL_KEY, JSON.stringify({dial:v, iso:toLocalISO(new Date())}));
+          }catch(e){}
+          showMyDialNote(true);
+        }
+        /* 保存した番号を、今日の日付に合わせて進めた状態で入れ直す */
+        function restoreMyDial(){
+          let o=null;
+          try{ const raw=localStorage.getItem(MYDIAL_KEY); if(!raw)return false; o=JSON.parse(raw); }catch(e){ return false; }
+          if(!o||!o.dial||!o.iso)return false;
+          const t=new Date(); t.setHours(0,0,0,0);
+          const base=new Date(o.iso+'T00:00:00');
+          const diff=Math.round((t-base)/86400000);
+          const d=((o.dial-1+diff)%59+59)%59+1;   // 1日ごとに1つ進む(1〜10を繰り返す)
+          const el=document.getElementById('daiya-number');
+          el.value=d;
+          try{ localStorage.setItem(MYDIAL_KEY, JSON.stringify({dial:d, iso:toLocalISO(t)})); }catch(e){}
+          showMyDialNote(true);
+          return true;
+        }
+        function forgetMyDial(){
+          try{ localStorage.removeItem(MYDIAL_KEY); }catch(e){}
+          document.getElementById('daiya-number').value='';
+          searchToday();
+          showMyDialNote(false);
+          showToast('保存した番号を消しました');
+        }
+        function showMyDialNote(on){
+          const el=document.getElementById('myDialNote');
+          if(el)el.style.display = on ? 'block' : 'none';
+        }
+
 
         function searchToday() {
             const num = parseInt(document.getElementById('daiya-number').value);
@@ -1518,6 +1874,7 @@
         function setQuickPeriod(days) {
             const today = new Date();
             document.getElementById('start-date').value = toLocalISO(today);
+            _selStart = toLocalISO(today);
             if(days === 0) {
                 document.getElementById('end-date').value = toLocalISO(today);
             } else {
@@ -1545,6 +1902,7 @@
             const endDate = addMonths(today, n);
             endDate.setDate(endDate.getDate() - 1);
             document.getElementById('start-date').value = toLocalISO(today);
+            _selStart = toLocalISO(today);
             document.getElementById('end-date').value = toLocalISO(endDate);
             searchRange();
         }
@@ -1643,6 +2001,29 @@
            効果音: 軽快な「ひゅーーーん」フェードアウト音
            Web Audio APIで周波数を高→低へスイープさせつつ音量を減衰
            ========================================================= */
+        /* ==== カレンダー用の音（getAudioCtx / beep）====
+           このアプリには元々これらが無かったので、既存のaudioCtxを使って用意する。 */
+        function getAudioCtx(){
+            try{
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+            }catch(e){ return null; }
+            return audioCtx;
+        }
+        function beep(freq, durationMs, delaySec){
+            try{
+                const ctx = getAudioCtx(); if(!ctx) return;
+                const t = ctx.currentTime + (delaySec || 0);
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(freq, t);
+                g.gain.setValueAtTime(0.18, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + durationMs/1000);
+                o.connect(g); g.connect(ctx.destination);
+                o.start(t); o.stop(t + durationMs/1000 + 0.02);
+            }catch(e){}
+        }
+
         let audioCtx = null;
 
         function playSwoosh() {
@@ -1690,7 +2071,12 @@
             applyTheme(savedTheme);
             // 今日のダイヤ番号を自動計算し、薄いプレースホルダーとして表示する
             document.getElementById('daiya-number').placeholder = calcAutoDial(new Date());
-            setQuickPeriodMonths(1); // 期間検索のデフォルトは1ヶ月
+            restoreMyDial();   // 前に入れた番号があれば、今日の番号に進めて自動で入れる
+            const _t=new Date(); _t.setHours(0,0,0,0);
+            _selStart=toLocalISO(_t); _selEnd=toLocalISO(_t);   // カレンダーの初期値は今日
+            document.getElementById('start-date').value=_selStart;
+            document.getElementById('end-date').value=_selEnd;
+            updateRangeLabel();
             searchToday();
             initServiceWorkerAndInstall(); // インストール導線・更新検知の初期化
         }
