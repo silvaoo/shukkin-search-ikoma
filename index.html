@@ -730,8 +730,9 @@
         /* 新系統の更新帯（最上部固定・脈打ち・破裂・煙）: IDでクラスに勝たせる */
         #update-banner {
           position: fixed; left: 0; right: 0; top: 0; z-index: 9999;
+          width: auto; margin: 0; border-radius: 0; box-sizing: border-box;
           padding: 14px 12px; border: none; cursor: pointer;
-          background: linear-gradient(135deg, var(--cyan), var(--orange));
+          background: linear-gradient(135deg, var(--accent-cyan), var(--accent-yellow));
           color: #06060f; font-size: 14px; font-weight: 800;
           box-shadow: 0 4px 20px rgba(0,0,0,0.5);
           transform-origin: center;
