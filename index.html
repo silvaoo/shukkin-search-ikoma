@@ -2058,7 +2058,7 @@
           const list=loadCalList();
           list.unshift({ id:'c'+Date.now(), label, savedAt:Date.now(), rows });
           saveCalList(list);
-          showToast('⭐ 「'+label+'」を保存しました');
+          showToast('⭐ カレンダー保存しました！メモ一覧からご覧下さい');
         }
         function openSavedCal(id){
           const item=loadCalList().find(c=>c.id===id);
