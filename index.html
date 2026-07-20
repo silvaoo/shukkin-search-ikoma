@@ -1764,6 +1764,7 @@
         const MEMO_DATE_KEY='ikoma-memos-date';
         const MEMO_DIAL_KEY='ikoma-memos-dial';
         const SAVED_CAL_KEY='ikoma-saved-cals';
+        const SAVED_CAL_SEQ_KEY='ikoma-saved-cals-seq';
 
         /* メモ本文をそのままHTMLに埋め込むと崩れる/危険なので必ずエスケープする */
         function escapeHtml(s){
@@ -2051,34 +2052,13 @@
         function saveCurrentCal(){
           const rows=window._lastRangeRows;
           if(!rows||!rows.length){ showToast('先に検索してください'); return; }
-          const isos=rows.map(r=>r.iso).sort();
-          const f=isos[0], l=isos[isos.length-1];
-          const fd=new Date(f+'T00:00:00'), ld=new Date(l+'T00:00:00');
-          const dial0=(rows.find(r=>r.iso===f)||{}).dial;
-          const label=`${dial0!=null?dial0+'番 ':''}${fd.getMonth()+1}/${fd.getDate()}〜${ld.getMonth()+1}/${ld.getDate()}`;
+          let seq=parseInt(localStorage.getItem(SAVED_CAL_SEQ_KEY)||'0',10)+1;
+          try{ localStorage.setItem(SAVED_CAL_SEQ_KEY, String(seq)); }catch(e){}
+          const label='検索くん 私のカレンダー'+seq;
           const list=loadCalList();
           list.unshift({ id:'c'+Date.now(), label, savedAt:Date.now(), rows });
           saveCalList(list);
-          showToast('⭐ 保存しました（メモ一覧 → 保存したカレンダー）');
-        }
-        /* 保存カレンダーの名前を一覧内で変更する（メモ編集と同じ方式。PWAでも確実） */
-        function renameSavedCal(id){
-          const item=loadCalList().find(c=>c.id===id); if(!item) return;
-          const box=document.getElementById('mlc-'+id); if(!box||box.querySelector('.ml-edit')) return;
-          const ed=document.createElement('div'); ed.className='ml-edit';
-          ed.innerHTML=`<textarea rows="1" id="mlc-in-${id}">${escapeHtml(item.label)}</textarea>
-            <div class="ml-edit-acts">
-              <button class="memo-act memo-save" onclick="commitRenameSavedCal('${id}')">💾 保存</button>
-              <button class="memo-act memo-close" onclick="renderMemoList()">✕ 取消</button>
-            </div>`;
-          box.appendChild(ed);
-          const ta=document.getElementById('mlc-in-'+id); if(ta){ ta.focus(); }
-        }
-        function commitRenameSavedCal(id){
-          const ta=document.getElementById('mlc-in-'+id); if(!ta) return;
-          const v=ta.value.trim(); if(!v){ showToast('名前を入力してください'); return; }
-          const list=loadCalList(); const it=list.find(c=>c.id===id); if(it) it.label=v;
-          saveCalList(list); showToast('名前を変更しました'); renderMemoList();
+          showToast('⭐ 「'+label+'」を保存しました');
         }
         function openSavedCal(id){
           const item=loadCalList().find(c=>c.id===id);
@@ -2168,12 +2148,11 @@
             cals.forEach(c=>{
               const d=new Date(c.savedAt);
               const sub=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} 保存`;
-              h3+=`<div class="ml-item" id="mlc-${c.id}">
+              h3+=`<div class="ml-item">
                 <div class="ml-top">
                   <div class="ml-key">${escapeHtml(c.label)}<span class="ml-sub">${sub}</span></div>
                   <div class="ml-acts">
                     <button class="ml-act" onclick="openSavedCal('${c.id}')">開く</button>
-                    <button class="ml-act" onclick="renameSavedCal('${c.id}')">名前</button>
                     <button class="ml-act del" onclick="deleteSavedCal('${c.id}')">削除</button>
                   </div>
                 </div>
