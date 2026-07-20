@@ -208,8 +208,8 @@
         .tag-fix { background: rgba(255,107,107,0.15); color: #ff6b6b; }
         .tag-up  { background: rgba(0,210,211,0.15); color: var(--accent-cyan); }
         .mydial-note {
-          margin-top: 8px; font-size: 12.5px; color: var(--text-color); text-align: center;
-          line-height: 1.7; font-weight: 600;
+          margin-top: 2px; font-size: 12.5px; color: var(--text-color); text-align: center;
+          line-height: 1.5; font-weight: 600;
         }
         .mydial-forget {
           color: var(--accent-yellow); text-decoration: underline; cursor: pointer;
@@ -429,8 +429,8 @@
         .tag-fix { background: rgba(255,107,107,0.15); color: #ff6b6b; }
         .tag-up  { background: rgba(0,210,211,0.15); color: var(--accent-cyan); }
         .mydial-note {
-          margin-top: 8px; font-size: 12.5px; color: var(--text-color); text-align: center;
-          line-height: 1.7; font-weight: 600;
+          margin-top: 2px; font-size: 12.5px; color: var(--text-color); text-align: center;
+          line-height: 1.5; font-weight: 600;
         }
         .mydial-forget {
           color: var(--accent-yellow); text-decoration: underline; cursor: pointer;
@@ -542,7 +542,7 @@
 
         .empty-msg {
             text-align: center;
-            padding: 30px 12px;
+            padding: 8px 12px 18px;
             color: var(--muted-text);
             font-size: 13px;
         }
@@ -591,7 +591,7 @@
         }
         .day-dial span { font-size: 14px; color: var(--muted-text); font-weight: 400; }
 
-        .day-boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .day-boxes { display: grid; grid-template-columns: 1.7fr 1fr; gap: 8px; }
         .day-boxes.split { grid-template-columns: 1fr; }
         .day-box {
             background: var(--list-bg);
@@ -601,6 +601,11 @@
         }
         .day-box-label { font-size: 10px; color: var(--muted-text); margin-bottom: 4px; letter-spacing: 1px; }
         .day-box-val { font-size: 14px; color: var(--text-color); line-height: 1.5; font-weight: bold; }
+        .day-box-val.day-box-val-time, .day-box-val.day-box-val-work { line-height: 1.35; }
+        .day-box-val-time.is-day, .day-box-val-work.is-day { font-size: 24px; white-space: nowrap; }
+        .day-box-val-time.is-split, .day-box-val-work.is-split { font-size: 17px; line-height: 1.5; }
+        .sp-row { display: block; white-space: nowrap; }
+        .sp-lb { display: inline-block; font-size: 10px; color: var(--muted-text); font-weight: 700; margin-right: 5px; letter-spacing: 1px; }
         .day-box-val.holiday-val { color: #ff4d4d; font-size: 17px; font-weight: 700; }
 
         .day-note {
@@ -1040,7 +1045,7 @@
         </div>
         <div id="today-result" class="result-box"></div>
         <div class="mydial-note" id="myDialNote" style="display:none;">
-            ✅ この番号を保存しました。明日からは自動で1つ進みます。
+            ✅ この番号を保存します。明日からは自動で1つ進みます。
             <span class="mydial-forget" onclick="forgetMyDial()">保存を消す</span>
         </div>
 
@@ -1830,6 +1835,31 @@
         }
 
 
+        /* 中間(分割)勤務の共通ヘルパー: start="前半[入り/出]", end="後半[入り/出]", workTime="前半/後半" */
+        function isSplitShift(m){ return String(m.start).includes('/') && String(m.end).includes('/'); }
+        function splitParts(m){
+            return {
+                s: String(m.start).split('/').map(x=>x.trim()),
+                e: String(m.end).split('/').map(x=>x.trim()),
+                w: String(m.workTime).split('/').map(x=>x.trim())
+            };
+        }
+        function shiftTimeText(m){
+            if(!isSplitShift(m)) return `${m.start} 〜 ${m.end}`;
+            const {s,e}=splitParts(m);
+            return `前半 ${s[0]}〜${s[1]} ／ 後半 ${e[0]}〜${e[1]}`;
+        }
+        function shiftWorkText(m){
+            if(!isSplitShift(m)) return `${m.workTime}`;
+            const {w}=splitParts(m);
+            return `前半 ${w[0]||''} ／ 後半 ${w[1]||''}`;
+        }
+        function shiftSpeech(m){
+            if(!isSplitShift(m)) return `出勤、${m.start}。退勤、${m.end}。労働時間は ${m.workTime} です。`;
+            const {s,e,w}=splitParts(m);
+            return `前半、${s[0]}から${s[1]}。後半、${e[0]}から${e[1]}。労働時間は前半${w[0]||''}、後半${w[1]||''}です。`;
+        }
+
         function buildDayCardHtml(dial, dateLabel, dayType, isHol, isBon, matches, memoHtml) {
             let dateClass = 'day-date';
             let badgeClass = 'day-badge badge-week';
@@ -1860,9 +1890,23 @@
                 bodyHtml = matches.map((m, idx) => {
                     const noteHtml = m.memo ? `<div class="day-note">📌 ${m.memo}</div>` : '';
                     const divider = idx > 0 ? '<div class="pattern-divider"></div>' : '';
+                    const s = String(m.start).split('/').map(x=>x.trim());
+                    const e = String(m.end).split('/').map(x=>x.trim());
+                    const w = String(m.workTime).split('/').map(x=>x.trim());
+                    const isSplit = s.length >= 2 && e.length >= 2;
+                    let timeHtml, workHtml, valCls;
+                    if (isSplit) {
+                        valCls = 'is-split';
+                        timeHtml = `<span class="sp-row"><span class="sp-lb">前半</span>${s[0]}〜${s[1]}</span><span class="sp-row"><span class="sp-lb">後半</span>${e[0]}〜${e[1]}</span>`;
+                        workHtml = `<span class="sp-row"><span class="sp-lb">前半</span>${w[0]||''}</span><span class="sp-row"><span class="sp-lb">後半</span>${w[1]||''}</span>`;
+                    } else {
+                        valCls = 'is-day';
+                        timeHtml = `${m.start} 〜 ${m.end}`;
+                        workHtml = `${m.workTime}`;
+                    }
                     return `${divider}<div class="day-boxes">
-                        <div class="day-box"><div class="day-box-label">出退勤時間</div><div class="day-box-val">${m.start} 〜 ${m.end}</div></div>
-                        <div class="day-box"><div class="day-box-label">労働時間</div><div class="day-box-val">${m.workTime}</div></div>
+                        <div class="day-box"><div class="day-box-label">出退勤時間</div><div class="day-box-val day-box-val-time ${valCls}">${timeHtml}</div></div>
+                        <div class="day-box"><div class="day-box-label">労働時間</div><div class="day-box-val day-box-val-work ${valCls}">${workHtml}</div></div>
                     </div>${noteHtml}`;
                 }).join('');
             }
@@ -2470,8 +2514,8 @@
             }else{
                 r.matches.forEach((m,i)=>{
                     if(r.matches.length>1) html+=`<div class="rcd-row"><span class="lbl">パターン${i+1}</span><span class="val"></span></div>`;
-                    html+=`<div class="rcd-row"><span class="lbl">出退勤時間</span><span class="val">${m.start} 〜 ${m.end}</span></div>`;
-                    html+=`<div class="rcd-row"><span class="lbl">労働時間</span><span class="val">${m.workTime}</span></div>`;
+                    html+=`<div class="rcd-row"><span class="lbl">出退勤時間</span><span class="val">${shiftTimeText(m)}</span></div>`;
+                    html+=`<div class="rcd-row"><span class="lbl">労働時間</span><span class="val">${shiftWorkText(m)}</span></div>`;
                     if(m.memo) html+=`<div class="rcd-note">📌 ${escapeHtml(m.memo)}</div>`;
                 });
             }
@@ -2539,7 +2583,7 @@
                     speechText += "本日は公休です。";
                 } else {
                     if (m.memo) speechText += `備考、${m.memo}。`;
-                    speechText += `出勤、${m.start}。退勤、${m.end}。労働時間は ${m.workTime} です。`;
+                    speechText += shiftSpeech(m);
                 }
             });
 
@@ -2650,7 +2694,7 @@
                 } else {
                     r.matches.forEach(m => {
                         if (m.memo) text += `備考、${m.memo}。`;
-                        text += `出勤、${m.start}。退勤、${m.end}。労働時間は ${m.workTime} です。`;
+                        text += shiftSpeech(m);
                     });
                 }
             });
