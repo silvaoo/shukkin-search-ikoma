@@ -328,6 +328,12 @@
           cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
         }
         .rc-save-btn:active { transform: scale(0.98); filter: brightness(0.95); }
+        .rc-cal-btn {
+          width: 100%; margin-top: 8px; padding: 12px; border: none; border-radius: 10px;
+          background: #2e7d5b; color: #ffffff; font-size: 15px; font-weight: 800;
+          cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+        }
+        .rc-cal-btn:active { transform: scale(0.98); filter: brightness(0.95); }
         .rescal-legend {
           margin-top: 8px; font-size: 10.5px; color: #6a6a80;
           text-align: center; line-height: 1.6;
@@ -1133,6 +1139,7 @@
           <span class="rc-legend-off">緑は公休</span>・薄い日は検索範囲外です
         </div>
         <button class="rc-save-btn" onclick="saveCurrentCal()">⭐ このカレンダーを保存</button>
+        <button class="rc-cal-btn" onclick="exportCalendarICS()">📅 スマホのカレンダーに登録</button>
       </div>
     </div>
 
@@ -2059,6 +2066,47 @@
         function saveCalList(a){ try{ localStorage.setItem(SAVED_CAL_KEY, JSON.stringify(a)); }catch(e){} }
         function clearRangeResults(){ const c=document.getElementById('range-results'); if(c) c.innerHTML=''; window._lastRangeRows=null; }
         window.addEventListener('pageshow', function(e){ if(e.persisted){ clearRangeResults(); } }); // iOS: リロード/キャッシュ復元時に検索結果を消す(Androidと同じ挙動に)
+        function icsEsc(t){ return String(t==null?'':t).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
+        function icsDT(iso, hhmm){
+          const pr=String(hhmm).split(':'); const h=parseInt(pr[0],10), mi=parseInt(pr[1],10);
+          const d=new Date(iso+'T00:00:00'); d.setMinutes(h*60+mi);   // 24:xx以降は自動で翌日に繰り越し
+          const p=n=>String(n).padStart(2,'0');
+          return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
+        }
+        function exportCalendarICS(){
+          const rows=window._lastRangeRows;
+          if(!rows||!rows.length){ showToast('先に検索してください'); return; }
+          let ev='', count=0;
+          rows.forEach(r=>{
+            const ms=(r.matches||[]).filter(m=>m && String(m.start).includes(':'));   // 公休(start:"公休")は除外
+            ms.forEach((m,idx)=>{
+              const multi = ms.length>1 ? `(パターン${idx+1})` : '';
+              let blocks;
+              if(isSplitShift(m)){ const sp=splitParts(m); blocks=[['前半',sp.s[0],sp.s[1]],['後半',sp.e[0],sp.e[1]]]; }
+              else { blocks=[['',m.start,m.end]]; }
+              blocks.forEach((bl,bi)=>{
+                if(!String(bl[1]).includes(':')||!String(bl[2]).includes(':')) return;
+                const dts=icsDT(r.iso,bl[1]), dte=icsDT(r.iso,bl[2]);
+                const sum=`🚌${r.dial}番ダイヤ${bl[0]?'('+bl[0]+')':''}${multi}`;
+                const desc=`労働時間 ${m.workTime||'-'}${m.memo?'\n'+m.memo:''}`;
+                ev+='BEGIN:VEVENT\r\nUID:sk-'+r.iso+'-'+r.dial+'-'+idx+'-'+bi+'-'+Date.now()+Math.random().toString(36).slice(2,6)+'@shukkin\r\n'
+                  +'DTSTART:'+dts+'\r\nDTEND:'+dte+'\r\nSUMMARY:'+icsEsc(sum)+'\r\nDESCRIPTION:'+icsEsc(desc)+'\r\n'
+                  +'BEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT60M\r\nDESCRIPTION:'+icsEsc('まもなく出勤 '+sum)+'\r\nEND:VALARM\r\nEND:VEVENT\r\n';
+                count++;
+              });
+            });
+          });
+          if(!count){ showToast('登録できる勤務がありません'); return; }
+          const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//出退勤検索くん//JP\r\nCALSCALE:GREGORIAN\r\n'+ev+'END:VCALENDAR\r\n';
+          try{
+            const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement('a'); a.href=url; a.download='勤務カレンダー.ics';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(()=>URL.revokeObjectURL(url),2000);
+            showToast('📅 '+count+'件をカレンダー用に書き出しました');
+          }catch(e){ showToast('書き出しに失敗しました'); }
+        }
         function saveCurrentCal(){
           const rows=window._lastRangeRows;
           if(!rows||!rows.length){ showToast('先に検索してください'); return; }
