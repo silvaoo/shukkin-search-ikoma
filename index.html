@@ -703,9 +703,9 @@
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 210, 211, 0.15);
+            background: rgba(15, 23, 30, 0.96);
             border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
+            color: #ffffff; font-weight: 700;
             padding: 10px 24px;
             border-radius: 20px;
             font-size: 13px;
@@ -716,6 +716,9 @@
           pointer-events: none; /* 見えていない時に下のボタン(更新バナー等)のタップを邪魔しないようにする */
         }
         .toast.show { opacity: 1; }
+        .clear-results-btn { display: block; width: 100%; margin: 12px 0 4px; padding: 11px; border: 1.5px solid #ff6b5e; border-radius: 10px; background: transparent; color: #ff6b5e; font-size: 14px; font-weight: 800; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; }
+        .clear-results-btn:active { background: rgba(255,107,94,0.14); }
+        #range-results:empty + .clear-results-btn { display: none; }
 
         /* ==== インストール案内・更新案内バナー ==== */
         .notice-banner {
@@ -1139,6 +1142,7 @@
     </div>
 
     <div id="range-results" class="range-results-box"></div>
+    <button class="clear-results-btn" onclick="clearRangeResults()">🗑 検索結果を消す</button>
 
     <div class="data-source-notice">
         このアプリは<span class="source-link" onclick="openSourceModal()">コチラ</span>のデータを元に作成しております。
@@ -2053,6 +2057,7 @@
         /* ==== 保存したカレンダー（検索結果をスナップショット保存し、後で見返す） ==== */
         function loadCalList(){ try{ return JSON.parse(localStorage.getItem(SAVED_CAL_KEY)||'[]'); }catch(e){ return []; } }
         function saveCalList(a){ try{ localStorage.setItem(SAVED_CAL_KEY, JSON.stringify(a)); }catch(e){} }
+        function clearRangeResults(){ const c=document.getElementById('range-results'); if(c) c.innerHTML=''; window._lastRangeRows=null; }
         function saveCurrentCal(){
           const rows=window._lastRangeRows;
           if(!rows||!rows.length){ showToast('先に検索してください'); return; }
