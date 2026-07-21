@@ -290,10 +290,10 @@
 
         /* ==== 検索結果カレンダー（番号と出退勤時間を一覧表示） ==== */
         .act-cal {
-          width: 100%; margin-top: 8px;
-          background: rgba(0,230,118,0.12); color: var(--accent-yellow);
-          border: 1px solid rgba(0,230,118,0.35);
+          background: rgba(0,230,118,0.16); color: var(--accent-yellow);
+          border: 1px solid rgba(0,230,118,0.55);
         }
+        .act-cal:active { background: rgba(0,230,118,0.85); color: #002; }
         /* 画面の縦を目一杯使って、マスと文字を大きくする */
         .rescal-grid .cal-day {
           aspect-ratio: auto; min-height: 104px;
@@ -334,6 +334,12 @@
           cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
         }
         .rc-cal-btn:active { transform: scale(0.98); filter: brightness(0.95); }
+        .ml-cal-btn {
+          width: 100%; margin-top: 8px; padding: 10px; border: none; border-radius: 8px;
+          background: #2e7d5b; color: #ffffff; font-size: 13px; font-weight: 800;
+          cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+        }
+        .ml-cal-btn:active { filter: brightness(0.92); }
         .rescal-legend {
           margin-top: 8px; font-size: 10.5px; color: #6a6a80;
           text-align: center; line-height: 1.6;
@@ -1138,8 +1144,7 @@
           上段＝ダイヤ番号 ／ 下段＝出退勤時間<br>
           <span class="rc-legend-off">緑は公休</span>・薄い日は検索範囲外です
         </div>
-        <button class="rc-save-btn" onclick="saveCurrentCal()">⭐ このカレンダーを保存</button>
-        <button class="rc-cal-btn" onclick="exportCalendarICS()">📅 スマホのカレンダーに登録</button>
+        <button class="rc-save-btn" onclick="saveCurrentCal()">⭐ メモ一覧に保存</button>
       </div>
     </div>
 
@@ -2073,9 +2078,9 @@
           const p=n=>String(n).padStart(2,'0');
           return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
         }
-        function exportCalendarICS(){
-          const rows=window._lastRangeRows;
-          if(!rows||!rows.length){ showToast('先に検索してください'); return; }
+        function exportCalendarICS(rows){
+          rows = rows || window._lastRangeRows;
+          if(!rows||!rows.length){ showToast('データがありません'); return; }
           const stamp=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';   // DTSTAMP(UTC)
           let ev='', count=0;
           rows.forEach(r=>{
@@ -2127,6 +2132,11 @@
           if(!confirm('この保存カレンダーを削除しますか？')) return;
           saveCalList(loadCalList().filter(c=>c.id!==id));
           renderMemoList();
+        }
+        function exportSavedCal(id){
+          const item=loadCalList().find(c=>c.id===id);
+          if(!item){ showToast('見つかりませんでした'); return; }
+          exportCalendarICS(item.rows);
         }
         function switchMemoList(which){
           const panes={date:'mlPaneDate',dial:'mlPaneDial',cal:'mlPaneCal'};
@@ -2212,6 +2222,7 @@
                     <button class="ml-act del" onclick="deleteSavedCal('${c.id}')">削除</button>
                   </div>
                 </div>
+                <button class="ml-cal-btn" onclick="exportSavedCal('${c.id}')">📅 カレンダーアプリに一括保存</button>
               </div>`;
             });
           }
@@ -2765,10 +2776,9 @@
                 html += buildDayCardHtml(r.dial, r.dateLabel, r.dayType, r.isHol, r.isBon, r.matches, memoBlockHtml(r.iso, r.dial));
             });
             html += `<div class="action-row">
-                <button class="act-btn act-copy" onclick="copyRangeResults()">📋 結果をコピー</button>
+                <button class="act-btn act-cal" onclick="openResultCal()">📅 カレンダーを見る</button>
                 <button class="act-btn act-tts" onclick="speakRangeResults()">🔊 読み上げ</button>
-            </div>
-            <button class="act-btn act-cal" onclick="openResultCal()">📅 カレンダーで見る</button>`;
+            </div>`;
 
             container.innerHTML = html;
 
