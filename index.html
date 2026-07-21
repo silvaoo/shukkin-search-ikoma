@@ -2076,6 +2076,7 @@
         function exportCalendarICS(){
           const rows=window._lastRangeRows;
           if(!rows||!rows.length){ showToast('先に検索してください'); return; }
+          const stamp=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';   // DTSTAMP(UTC)
           let ev='', count=0;
           rows.forEach(r=>{
             const ms=(r.matches||[]).filter(m=>m && String(m.start).includes(':'));   // 公休(start:"公休")は除外
@@ -2090,14 +2091,14 @@
                 const sum=`🚌${r.dial}番ダイヤ${bl[0]?'('+bl[0]+')':''}${multi}`;
                 const desc=`労働時間 ${m.workTime||'-'}${m.memo?'\n'+m.memo:''}`;
                 ev+='BEGIN:VEVENT\r\nUID:sk-'+r.iso+'-'+r.dial+'-'+idx+'-'+bi+'-'+Date.now()+Math.random().toString(36).slice(2,6)+'@shukkin\r\n'
-                  +'DTSTART:'+dts+'\r\nDTEND:'+dte+'\r\nSUMMARY:'+icsEsc(sum)+'\r\nDESCRIPTION:'+icsEsc(desc)+'\r\n'
+                  +'DTSTAMP:'+stamp+'\r\nDTSTART:'+dts+'\r\nDTEND:'+dte+'\r\nSUMMARY:'+icsEsc(sum)+'\r\nDESCRIPTION:'+icsEsc(desc)+'\r\n'
                   +'BEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT60M\r\nDESCRIPTION:'+icsEsc('まもなく出勤 '+sum)+'\r\nEND:VALARM\r\nEND:VEVENT\r\n';
                 count++;
               });
             });
           });
           if(!count){ showToast('登録できる勤務がありません'); return; }
-          const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//出退勤検索くん//JP\r\nCALSCALE:GREGORIAN\r\n'+ev+'END:VCALENDAR\r\n';
+          const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//出退勤検索くん//JP\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n'+ev+'END:VCALENDAR\r\n';
           try{
             const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
             const url=URL.createObjectURL(blob);
