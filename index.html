@@ -789,50 +789,6 @@
           45%  { transform: scale(1.4); opacity: 0.95; filter: brightness(1.5); }
           100% { transform: scale(0.2); opacity: 0; filter: brightness(2); }
         }
-        /* ===== 更新時のガラス割れ演出 ===== */
-        #glass-break { position: fixed; inset: 0; z-index: 10050; pointer-events: none; overflow: hidden; }
-        #glass-break svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-        /* ヒビの線: シルバー。stroke-dasharrayでスッと伸びる */
-        #glass-break path.crack {
-          fill: none; stroke: #f2f5f8; stroke-width: 3.4; stroke-linecap: round;
-          filter: drop-shadow(0 0 4px rgba(255,255,255,1)) drop-shadow(0 0 12px rgba(200,215,235,0.95)) drop-shadow(0 0 22px rgba(150,175,205,0.6));
-          stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
-          animation: gb-draw 0.05s linear forwards;
-        }
-        @keyframes gb-draw { to { stroke-dashoffset: 0; } }
-        /* 破片: 画面のスクショ代わりに半透明ガラス板を割って落とす */
-        .gb-shard {
-          position: fixed; z-index: 10049; pointer-events: none;
-          background: linear-gradient(135deg, rgba(255,255,255,0.30), rgba(205,220,238,0.12) 45%, rgba(255,255,255,0.26));
-          border: 1.5px solid rgba(240,246,252,0.98);
-          box-shadow: 0 0 14px rgba(255,255,255,0.5) inset, 0 0 20px rgba(190,210,235,0.55);
-          will-change: transform, opacity;
-          animation: gb-fall var(--dur,1s) cubic-bezier(.55,.02,.9,.72) forwards;
-        }
-        @keyframes gb-fall {
-          0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          10%  { transform: translate(calc(var(--dx)*0.1), 3vh) rotate(calc(var(--rot)*0.1)); opacity: 1; }
-          100% { transform: translate(var(--dx), 115vh) rotate(var(--rot)); opacity: 0.92; }
-        }
-        /* 割れた瞬間の白フラッシュ */
-        #gb-flash {
-          position: fixed; inset: 0; z-index: 10048; pointer-events: none; background: #fff; opacity: 0;
-          animation: gb-flash 0.26s ease-out forwards;
-        }
-        @keyframes gb-flash { 0% { opacity: 0.5; } 100% { opacity: 0; } }
-        /* 画面全体の揺れ */
-        .gb-shake { animation: gb-shake 0.22s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes gb-shake {
-          10%,90% { transform: translate(-2px, 1px); }
-          20%,80% { transform: translate(4px, -2px); }
-          30%,50%,70% { transform: translate(-7px, 3px); }
-          40%,60% { transform: translate(7px, -3px); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          #glass-break path.crack { animation-duration: 0.01s; }
-          .gb-shard { animation-duration: 0.3s; }
-          .gb-shake { animation: none; }
-        }
         /* 煙の粒（移動先はJSがCSS変数で渡す） */
         .ub-smoke {
           position: fixed; z-index: 9998; border-radius: 50%;
@@ -2116,13 +2072,7 @@
         /* ==== 保存したカレンダー（検索結果をスナップショット保存し、後で見返す） ==== */
         function loadCalList(){ try{ return JSON.parse(localStorage.getItem(SAVED_CAL_KEY)||'[]'); }catch(e){ return []; } }
         function saveCalList(a){ try{ localStorage.setItem(SAVED_CAL_KEY, JSON.stringify(a)); }catch(e){} }
-        function clearRangeResults(){
-          const c=document.getElementById('range-results');
-          if(!c || !c.innerHTML){ return; }              // 結果が無い時は何もしない
-          if(window._gbClearing) return; window._gbClearing=true;
-          playGlassBreak();                              // ヒビ→崩落の演出
-          setTimeout(()=>{ window.location.reload(); }, (window._gbReloadMs||430));   // 崩れ落ちきってから再読み込み
-        }
+        function clearRangeResults(){ const c=document.getElementById('range-results'); if(c) c.innerHTML=''; window._lastRangeRows=null; }
         window.addEventListener('pageshow', function(e){ if(e.persisted){ clearRangeResults(); } }); // iOS: リロード/キャッシュ復元時に検索結果を消す(Androidと同じ挙動に)
         function icsEsc(t){ return String(t==null?'':t).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
         function icsDT(iso, hhmm){
@@ -3233,274 +3183,45 @@
             setTimeout(()=>{
               b.classList.remove('burst'); b.style.display='none';
               b._bursting=false; document.body.style.paddingTop='';
-            },(window._gbReloadMs||430));
+            },1100);
             return;
           }
           b._bursting=true;
-          playUpdateBurst(b);                 // ヒビ→崩落の演出
-          // 崩れ落ちきってから更新を適用する(演出は約1.9秒)
+          playUpdateBurst(b);                 // 破裂＆煙の演出
+          // 演出(約0.8秒)を見せてから更新を適用する
           setTimeout(()=>{
             if(!('serviceWorker' in navigator)){window.location.reload();return;}
             navigator.serviceWorker.getRegistration().then((reg)=>{
               if(reg&&reg.waiting){reg.waiting.postMessage('SKIP_WAITING');}
               else{window.location.reload();}
             }).catch(()=>window.location.reload());
-          },(window._gbReloadMs||430));
+          },950);
         }
-        /* 更新帯をタップした時の「ヒビ→崩落」演出（パキ…パキパキパキ…ガッシャーン） */
-        /* 「パキッ」1回分の音。硬い木/ガラスが割れる短いクラック音を合成する */
-        function crackSound(delaySec, pitch){
-          try{
-            const ctx=getAudioCtx(); if(!ctx) return;
-            const t=ctx.currentTime+(delaySec||0);
-            const dur=0.09;
-            // 芯になる短いノイズ（バンドパスで“パキッ”の帯域だけ通す）
-            const buf=ctx.createBuffer(1, Math.ceil(ctx.sampleRate*dur), ctx.sampleRate);
-            const d=buf.getChannelData(0);
-            for(let i=0;i<d.length;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.2); }
-            const src=ctx.createBufferSource(); src.buffer=buf;
-            const bp=ctx.createBiquadFilter(); bp.type='bandpass';
-            bp.frequency.setValueAtTime(2600*(pitch||1), t); bp.Q.value=5;
-            const g=ctx.createGain();
-            g.gain.setValueAtTime(0.34, t);
-            g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
-            src.connect(bp); bp.connect(g); g.connect(ctx.destination);
-            src.start(t); src.stop(t+dur+0.01);
-            // 上に乗せる金属的な“キン”（爽やかさを出す）
-            const o=ctx.createOscillator(), og=ctx.createGain();
-            o.type='triangle';
-            o.frequency.setValueAtTime(2100*(pitch||1), t);
-            o.frequency.exponentialRampToValueAtTime(1200*(pitch||1), t+0.07);
-            og.gain.setValueAtTime(0.12, t);
-            og.gain.exponentialRampToValueAtTime(0.0001, t+0.08);
-            o.connect(og); og.connect(ctx.destination);
-            o.start(t); o.stop(t+0.1);
-          }catch(e){}
-        }
-        /* 「ガッシャーン」。高音のきらめきを重ねて“爽快に砕ける”感じにする */
-        function smashSound(delaySec){
-          try{
-            const ctx=getAudioCtx(); if(!ctx) return;
-            const t0=ctx.currentTime+(delaySec||0);
-            const dur=1.15;
-            // 砕けたガラスが降り注ぐノイズ（高域中心＝爽快）
-            const buf=ctx.createBuffer(1, Math.ceil(ctx.sampleRate*dur), ctx.sampleRate);
-            const d=buf.getChannelData(0);
-            for(let i=0;i<d.length;i++){
-              const p=i/d.length;
-              // パラパラ感: ランダムに粒を立てる
-              const grain=(Math.random()<0.06)?(Math.random()*2-1):(Math.random()*2-1)*0.25;
-              d[i]=grain*Math.pow(1-p,1.5);
-            }
-            const src=ctx.createBufferSource(); src.buffer=buf;
-            const hp=ctx.createBiquadFilter(); hp.type='highpass';
-            hp.frequency.setValueAtTime(1500,t0);
-            hp.frequency.exponentialRampToValueAtTime(3500,t0+dur);   // だんだん高く=粒が細かくなる
-            const g=ctx.createGain();
-            g.gain.setValueAtTime(0.0001,t0);
-            g.gain.exponentialRampToValueAtTime(0.5,t0+0.03);
-            g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-            src.connect(hp); hp.connect(g); g.connect(ctx.destination);
-            src.start(t0); src.stop(t0+dur+0.02);
-            // きらめき（高音のベル）を数発ばらして重ねる＝爽快感
-            [0,0.05,0.12,0.2,0.3,0.45].forEach((off,i)=>{
-              const o=ctx.createOscillator(), og=ctx.createGain();
-              o.type='sine';
-              const f=2400+Math.random()*2200;
-              o.frequency.setValueAtTime(f,t0+off);
-              o.frequency.exponentialRampToValueAtTime(f*0.75,t0+off+0.35);
-              og.gain.setValueAtTime(0.10/(i*0.5+1),t0+off);
-              og.gain.exponentialRampToValueAtTime(0.0001,t0+off+0.4);
-              o.connect(og); og.connect(ctx.destination);
-              o.start(t0+off); o.stop(t0+off+0.42);
-            });
-            // 低音の一撃（重み）
-            const lo=ctx.createOscillator(), lg=ctx.createGain();
-            lo.type='sine';
-            lo.frequency.setValueAtTime(150,t0);
-            lo.frequency.exponentialRampToValueAtTime(45,t0+0.35);
-            lg.gain.setValueAtTime(0.32,t0);
-            lg.gain.exponentialRampToValueAtTime(0.0001,t0+0.45);
-            lo.connect(lg); lg.connect(ctx.destination);
-            lo.start(t0); lo.stop(t0+0.5);
-          }catch(e){}
-        }
-        /* ガラスらしい直線的なヒビを作る。
-           radial=中心から外へ一直線に走る主要な割れ、ring=それらを横切る同心状の割れ。 */
-        function gbLine(x1,y1,x2,y2){
-          return `M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-        }
-        /* 中心から角度angへ、ほぼ直線(わずかに折れる)で伸びるヒビ */
-        function gbRadialPath(cx,cy,ang,len,segs){
-          let x=cx,y=cy,a=ang;
-          let d=`M ${x.toFixed(1)} ${y.toFixed(1)}`;
-          const n=segs||3;
-          for(let i=0;i<n;i++){
-            a += (Math.random()-0.5)*0.14;          // ほんの少しだけ角度が変わる=直線的
-            const seg=len/n*(0.8+Math.random()*0.4);
-            x += Math.cos(a)*seg; y += Math.sin(a)*seg;
-            d += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
-          }
-          return {d:d, ex:x, ey:y, ang:a};
-        }
-        function gbAppend(svg,d,w){
-          const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-          p.setAttribute('class','crack'); p.setAttribute('d',d);
-          if(w) p.style.strokeWidth=w+'px';
-          svg.appendChild(p);
-          const len=p.getTotalLength?p.getTotalLength():400;
-          p.style.setProperty('--len',len.toFixed(0));
-          return p;
-        }
-        /* 放射状の主ヒビ（縦・横・斜めまんべんなく）。startDeg〜endDegの範囲でcount本 */
-        function gbAddRadials(svg,cx,cy,count,minLen,maxLen,store){
-          for(let i=0;i<count;i++){
-            const ang=(Math.PI*2*i/count)+(Math.random()-0.5)*(Math.PI/count);
-            const len=minLen+Math.random()*(maxLen-minLen);
-            const r=gbRadialPath(cx,cy,ang,len,2+Math.floor(Math.random()*2));
-            gbAppend(svg,r.d,2.6+Math.random()*1.4);
-            if(store) store.push({ang:ang, len:len});
-            // 枝分かれ（途中から別方向へ直線で飛ぶ）
-            if(Math.random()<0.55){
-              const t=0.45+Math.random()*0.35;
-              const bx=cx+Math.cos(ang)*len*t, by=cy+Math.sin(ang)*len*t;
-              const ba=ang+(Math.random()<0.5?1:-1)*(0.35+Math.random()*0.5);
-              const bl=len*(0.25+Math.random()*0.35);
-              gbAppend(svg, gbLine(bx,by,bx+Math.cos(ba)*bl,by+Math.sin(ba)*bl), 1.8);
-            }
-          }
-        }
-        /* 放射ヒビをつなぐ同心状のヒビ（多角形の輪）＝破片の形を作る */
-        function gbAddRings(svg,cx,cy,radials,ringCount,rMin,rMax){
-          if(!radials||radials.length<2) return;
-          const angs=radials.map(r=>r.ang).sort((a,b)=>a-b);
-          for(let k=0;k<ringCount;k++){
-            const base=rMin+(rMax-rMin)*(k+0.5)/ringCount;
-            for(let i=0;i<angs.length;i++){
-              const a1=angs[i], a2=angs[(i+1)%angs.length]+(i+1===angs.length?Math.PI*2:0);
-              const r1=base*(0.82+Math.random()*0.36), r2=base*(0.82+Math.random()*0.36);
-              const x1=cx+Math.cos(a1)*r1, y1=cy+Math.sin(a1)*r1;
-              const x2=cx+Math.cos(a2)*r2, y2=cy+Math.sin(a2)*r2;
-              if(Math.random()<0.82) gbAppend(svg, gbLine(x1,y1,x2,y2), 1.5+Math.random()*0.9);
-            }
-          }
-        }
-        /* 崩落直前に画面全体へ細かいヒビを一気に走らせる（粉々の状態） */
-        function gbAddShatterMesh(svg,W,H,count){
-          for(let i=0;i<count;i++){
-            const x1=Math.random()*W, y1=Math.random()*H;
-            const ang=Math.random()*Math.PI*2;
-            const len=40+Math.random()*150;
-            gbAppend(svg, gbLine(x1,y1,x1+Math.cos(ang)*len,y1+Math.sin(ang)*len), 1+Math.random()*1.2);
-          }
-        }
-        /* 端末の性能を見て演出の重さを決める。
-           重い端末(コア数/メモリが少ない、実測の描画が遅い)では自動で軽量版にする。 */
-        function gbPerfTier(){
-          if(window._gbTier) return window._gbTier;
-          let score=0;
-          const cores=navigator.hardwareConcurrency||4;
-          const mem=navigator.deviceMemory||4;              // 対応端末のみ(iOSは未対応→undefined)
-          score += cores>=8?2:(cores>=6?1:0);
-          score += mem>=8?2:(mem>=4?1:0);
-          // 実測: 短い描画ループにかかった時間で判定(重い端末ほど時間がかかる)
-          try{
-            const t0=performance.now();
-            const box=document.createElement('div');
-            box.style.cssText='position:fixed;left:-9999px;top:0;width:10px;height:10px;';
-            document.body.appendChild(box);
-            for(let i=0;i<220;i++){ box.style.transform='translate('+i+'px,'+i+'px) rotate('+i+'deg)'; void box.offsetHeight; }
-            const el=performance.now()-t0;
-            box.remove();
-            score += el<28?2:(el<60?1:0);
-          }catch(e){ score+=1; }
-          // 省電力/アニメ抑制の設定がONなら必ず軽量
-          if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) score=-1;
-          window._gbTier = score>=4 ? 'rich' : (score>=2 ? 'mid' : 'lite');
-          return window._gbTier;
-        }
+        /* 更新帯をタップした時の「破裂→煙」演出 */
         function playUpdateBurst(b){
-          if(b) b.classList.add('burst');                 // 帯は消える
-          playGlassBreak();
-        }
-        /* ヒビ→崩落の本体（更新帯タップ・検索結果を消すの両方から使う） */
-        function playGlassBreak(){
-          const W=window.innerWidth, H=window.innerHeight;
-          const tier=gbPerfTier();
-          // 端末の重さに応じて、ヒビの量・破片の枚数・速さを変える
-          const CFG = tier==='rich'
-            ? {rad:8, mesh:42, ringN:2, cols:6, rows:8,  t:[65,105,145], tShat:175, tFall:225, reload:430, dur:[0.13,0.08], half:false}
-            : tier==='mid'
-            ? {rad:6, mesh:24, ringN:1, cols:5, rows:6,  t:[55,90,125],  tShat:150, tFall:195, reload:380, dur:[0.12,0.06], half:false}
-            : {rad:5, mesh:12, ringN:1, cols:4, rows:4,  t:[45,75,105],  tShat:125, tFall:165, reload:330, dur:[0.10,0.05], half:true};
-          window._gbReloadMs = CFG.reload;   // 復帰までの時間も端末に合わせる
-          const layer=document.createElement('div'); layer.id='glass-break';
-          const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-          svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('preserveAspectRatio','none');
-          layer.appendChild(svg); document.body.appendChild(layer);
-
-          // ① パキ… 上1/3の中心にヒビが入り始める（放射状に数本）
-          const c1x=W/2, c1y=H*0.18;
-          const rad1=[];
-          crackSound(0, 1.15);
-          if(navigator.vibrate) navigator.vibrate(18);
-          gbAddRadials(svg,c1x,c1y,CFG.rad,W*0.30,W*0.55,rad1);
-          gbAddRings(svg,c1x,c1y,rad1,1,W*0.16,W*0.34);
-
-          // ② パキ、パキ、パキ… ヒビが縦にも横にも走り、画面全体へ広がる
-          const centers=[[W/2,H*0.42],[W*0.30,H*0.68],[W*0.72,H*0.86]];
-          CFG.t.forEach((ms,i)=>{
-            setTimeout(()=>{
-              crackSound(0, 1.0-i*0.12);
-              if(navigator.vibrate) navigator.vibrate(14);
-              const cx=centers[i][0], cy=centers[i][1];
-              const rad=[];
-              gbAddRadials(svg,cx,cy,CFG.rad+i,W*0.34,W*0.78,rad);   // 主ヒビ（直線的・全方向）
-              gbAddRings(svg,cx,cy,rad,CFG.ringN,W*0.14,W*0.52);        // 破片の形を作る同心ヒビ
-              // 1つ前の中心へ向かう連絡ヒビ（画面がつながって割れていく感じ）
-              if(i>0){
-                const p=centers[i-1];
-                gbAppend(svg, gbLine(cx,cy,p[0],p[1]), 2.2);
-              }
-            }, ms);
-          });
-
-          // ②' 崩落の直前：画面全体が細かくヒビ割れて粉々になる
-          setTimeout(()=>{
-            crackSound(0,1.35); crackSound(0.05,1.1);
-            if(navigator.vibrate) navigator.vibrate(22);
-            gbAddShatterMesh(svg,W,H,CFG.mesh);
-            const rc=[];
-            gbAddRadials(svg,W/2,H/2,CFG.rad+1,W*0.5,W*1.0,rc);
-            gbAddRings(svg,W/2,H/2,rc,CFG.ringN,W*0.18,W*0.72);
-          }, CFG.tShat);
-
-          // ③ ガッシャーン！ 崩落
-          setTimeout(()=>{
-            smashSound(0);
-            if(navigator.vibrate) navigator.vibrate([0,60,40,120]);
-            const fl=document.createElement('div'); fl.id='gb-flash'; document.body.appendChild(fl);
-            document.body.classList.add('gb-shake');
-            // 画面をタイル状に割って落とす
-            const cols=CFG.cols, rows=CFG.rows, cw=W/cols, ch=H/rows;
-            const rowMax = CFG.half ? Math.ceil(rows/2) : rows;   // 重い端末は上半分だけ崩す
-            for(let r=0;r<rowMax;r++){
-              for(let c=0;c<cols;c++){
-                const sh=document.createElement('div'); sh.className='gb-shard';
-                sh.style.left=(c*cw)+'px'; sh.style.top=(r*ch)+'px';
-                sh.style.width=cw+'px'; sh.style.height=ch+'px';
-                sh.style.setProperty('--dx', ((c-(cols-1)/2)*(1+Math.random()*3)).toFixed(0)+'px');
-                sh.style.setProperty('--rot', ((Math.random()-0.5)*24).toFixed(0)+'deg');
-                sh.style.setProperty('--dur', (CFG.dur[0]+Math.random()*CFG.dur[1]).toFixed(2)+'s');
-                sh.style.animationDelay=((rows-r)*0.006+Math.random()*0.008).toFixed(3)+'s';  // 下から順に崩れる
-                document.body.appendChild(sh);
-                setTimeout(()=>sh.remove(),500);
-              }
-            }
-            setTimeout(()=>{ svg.style.transition='opacity .35s'; svg.style.opacity='0'; },160);
-            setTimeout(()=>{ fl.remove(); document.body.classList.remove('gb-shake'); },330);
-            setTimeout(()=>layer.remove(),500);
-          }, CFG.tFall);
+          try{ hissSound(); beep(520,90,0.02); beep(260,160,0.1); }catch(e){}   // プシュー＋破裂の低音
+          if(navigator.vibrate) navigator.vibrate([20,30,50,30,80]);
+          const r=b.getBoundingClientRect();
+          const cx=r.left+r.width/2, cy=r.top+r.height/2;
+          b.classList.add('burst');           // 帯がしぼんで消える
+          // 煙の粒を放射状に飛ばす（多め・大きめ・遠くまで）
+          const N=28;
+          for(let i=0;i<N;i++){
+            const s=document.createElement('div');
+            s.className='ub-smoke';
+            const size=30+Math.random()*46;
+            s.style.width=size+'px'; s.style.height=size+'px';
+            // 帯の幅方向に散らして出す（1点からではなく帯全体から噴く感じ）
+            const ox=(Math.random()-0.5)*r.width*0.7;
+            s.style.left=(cx+ox-size/2)+'px'; s.style.top=(cy-size/2)+'px';
+            const ang=(Math.PI*2*i/N)+(Math.random()-0.5)*0.6;
+            const dist=90+Math.random()*140;
+            s.style.setProperty('--sx',(Math.cos(ang)*dist).toFixed(0)+'px');
+            s.style.setProperty('--sy',(Math.sin(ang)*dist-40).toFixed(0)+'px'); // 上に流す
+            s.style.animationDuration=(0.9+Math.random()*0.4).toFixed(2)+'s';    // 粒ごとに速さを変える
+            document.body.appendChild(s);
+            setTimeout(()=>s.remove(),1400);
+          }
         }
     </script>
 </body>
