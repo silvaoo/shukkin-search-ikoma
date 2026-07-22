@@ -811,8 +811,8 @@
         }
         @keyframes gb-fall {
           0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          8%   { transform: translate(calc(var(--dx)*0.08), -6px) rotate(calc(var(--rot)*0.08)); opacity: 1; }
-          100% { transform: translate(var(--dx), 115vh) rotate(var(--rot)); opacity: 0.9; }
+          10%  { transform: translate(calc(var(--dx)*0.1), 3vh) rotate(calc(var(--rot)*0.1)); opacity: 1; }
+          100% { transform: translate(var(--dx), 115vh) rotate(var(--rot)); opacity: 0.92; }
         }
         /* 割れた瞬間の白フラッシュ */
         #gb-flash {
@@ -3455,10 +3455,10 @@
                 const sh=document.createElement('div'); sh.className='gb-shard';
                 sh.style.left=(c*cw)+'px'; sh.style.top=(r*ch)+'px';
                 sh.style.width=cw+'px'; sh.style.height=ch+'px';
-                sh.style.setProperty('--dx', ((c-(cols-1)/2)*(6+Math.random()*26)).toFixed(0)+'px');
-                sh.style.setProperty('--rot', ((Math.random()-0.5)*90).toFixed(0)+'deg');
+                sh.style.setProperty('--dx', ((c-(cols-1)/2)*(1+Math.random()*3)).toFixed(0)+'px');
+                sh.style.setProperty('--rot', ((Math.random()-0.5)*24).toFixed(0)+'deg');
                 sh.style.setProperty('--dur', (0.18+Math.random()*0.12).toFixed(2)+'s');
-                sh.style.animationDelay=((rows-r)*0.002+Math.random()*0.015).toFixed(3)+'s';  // 下から順に崩れる
+                sh.style.animationDelay=((rows-r)*0.010+Math.random()*0.012).toFixed(3)+'s';  // 下から順に崩れる
                 document.body.appendChild(sh);
                 setTimeout(()=>sh.remove(),650);
               }
