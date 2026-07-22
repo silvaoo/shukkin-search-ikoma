@@ -789,6 +789,50 @@
           45%  { transform: scale(1.4); opacity: 0.95; filter: brightness(1.5); }
           100% { transform: scale(0.2); opacity: 0; filter: brightness(2); }
         }
+        /* ===== 更新時のガラス割れ演出 ===== */
+        #glass-break { position: fixed; inset: 0; z-index: 10050; pointer-events: none; overflow: hidden; }
+        #glass-break svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+        /* ヒビの線: シルバー。stroke-dasharrayでスッと伸びる */
+        #glass-break path.crack {
+          fill: none; stroke: #f2f5f8; stroke-width: 3.4; stroke-linecap: round;
+          filter: drop-shadow(0 0 4px rgba(255,255,255,1)) drop-shadow(0 0 12px rgba(200,215,235,0.95)) drop-shadow(0 0 22px rgba(150,175,205,0.6));
+          stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+          animation: gb-draw 0.16s linear forwards;
+        }
+        @keyframes gb-draw { to { stroke-dashoffset: 0; } }
+        /* 破片: 画面のスクショ代わりに半透明ガラス板を割って落とす */
+        .gb-shard {
+          position: fixed; z-index: 10049; pointer-events: none;
+          background: linear-gradient(135deg, rgba(255,255,255,0.30), rgba(205,220,238,0.12) 45%, rgba(255,255,255,0.26));
+          border: 1.5px solid rgba(240,246,252,0.98);
+          box-shadow: 0 0 14px rgba(255,255,255,0.5) inset, 0 0 20px rgba(190,210,235,0.55);
+          will-change: transform, opacity;
+          animation: gb-fall var(--dur,1s) cubic-bezier(.36,.05,.6,1) forwards;
+        }
+        @keyframes gb-fall {
+          0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+          12%  { transform: translate(calc(var(--dx)*0.12), -14px) rotate(calc(var(--rot)*0.12)); opacity: 1; }
+          100% { transform: translate(var(--dx), 115vh) rotate(var(--rot)); opacity: 0.9; }
+        }
+        /* 割れた瞬間の白フラッシュ */
+        #gb-flash {
+          position: fixed; inset: 0; z-index: 10048; pointer-events: none; background: #fff; opacity: 0;
+          animation: gb-flash 0.42s ease-out forwards;
+        }
+        @keyframes gb-flash { 0% { opacity: 0.5; } 100% { opacity: 0; } }
+        /* 画面全体の揺れ */
+        .gb-shake { animation: gb-shake 0.45s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes gb-shake {
+          10%,90% { transform: translate(-2px, 1px); }
+          20%,80% { transform: translate(4px, -2px); }
+          30%,50%,70% { transform: translate(-7px, 3px); }
+          40%,60% { transform: translate(7px, -3px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #glass-break path.crack { animation-duration: 0.01s; }
+          .gb-shard { animation-duration: 0.3s; }
+          .gb-shake { animation: none; }
+        }
         /* 煙の粒（移動先はJSがCSS変数で渡す） */
         .ub-smoke {
           position: fixed; z-index: 9998; border-radius: 50%;
@@ -2072,7 +2116,13 @@
         /* ==== 保存したカレンダー（検索結果をスナップショット保存し、後で見返す） ==== */
         function loadCalList(){ try{ return JSON.parse(localStorage.getItem(SAVED_CAL_KEY)||'[]'); }catch(e){ return []; } }
         function saveCalList(a){ try{ localStorage.setItem(SAVED_CAL_KEY, JSON.stringify(a)); }catch(e){} }
-        function clearRangeResults(){ const c=document.getElementById('range-results'); if(c) c.innerHTML=''; window._lastRangeRows=null; }
+        function clearRangeResults(){
+          const c=document.getElementById('range-results');
+          if(!c || !c.innerHTML){ return; }              // 結果が無い時は何もしない
+          if(window._gbClearing) return; window._gbClearing=true;
+          playGlassBreak();                              // ヒビ→崩落の演出
+          setTimeout(()=>{ window.location.reload(); }, 1750);   // 崩れ落ちきってから再読み込み
+        }
         window.addEventListener('pageshow', function(e){ if(e.persisted){ clearRangeResults(); } }); // iOS: リロード/キャッシュ復元時に検索結果を消す(Androidと同じ挙動に)
         function icsEsc(t){ return String(t==null?'':t).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
         function icsDT(iso, hhmm){
@@ -3183,45 +3233,181 @@
             setTimeout(()=>{
               b.classList.remove('burst'); b.style.display='none';
               b._bursting=false; document.body.style.paddingTop='';
-            },1100);
+            },1900);
             return;
           }
           b._bursting=true;
-          playUpdateBurst(b);                 // 破裂＆煙の演出
-          // 演出(約0.8秒)を見せてから更新を適用する
+          playUpdateBurst(b);                 // ヒビ→崩落の演出
+          // 崩れ落ちきってから更新を適用する(演出は約1.9秒)
           setTimeout(()=>{
             if(!('serviceWorker' in navigator)){window.location.reload();return;}
             navigator.serviceWorker.getRegistration().then((reg)=>{
               if(reg&&reg.waiting){reg.waiting.postMessage('SKIP_WAITING');}
               else{window.location.reload();}
             }).catch(()=>window.location.reload());
-          },950);
+          },1750);
         }
-        /* 更新帯をタップした時の「破裂→煙」演出 */
-        function playUpdateBurst(b){
-          try{ hissSound(); beep(520,90,0.02); beep(260,160,0.1); }catch(e){}   // プシュー＋破裂の低音
-          if(navigator.vibrate) navigator.vibrate([20,30,50,30,80]);
-          const r=b.getBoundingClientRect();
-          const cx=r.left+r.width/2, cy=r.top+r.height/2;
-          b.classList.add('burst');           // 帯がしぼんで消える
-          // 煙の粒を放射状に飛ばす（多め・大きめ・遠くまで）
-          const N=28;
-          for(let i=0;i<N;i++){
-            const s=document.createElement('div');
-            s.className='ub-smoke';
-            const size=30+Math.random()*46;
-            s.style.width=size+'px'; s.style.height=size+'px';
-            // 帯の幅方向に散らして出す（1点からではなく帯全体から噴く感じ）
-            const ox=(Math.random()-0.5)*r.width*0.7;
-            s.style.left=(cx+ox-size/2)+'px'; s.style.top=(cy-size/2)+'px';
-            const ang=(Math.PI*2*i/N)+(Math.random()-0.5)*0.6;
-            const dist=90+Math.random()*140;
-            s.style.setProperty('--sx',(Math.cos(ang)*dist).toFixed(0)+'px');
-            s.style.setProperty('--sy',(Math.sin(ang)*dist-40).toFixed(0)+'px'); // 上に流す
-            s.style.animationDuration=(0.9+Math.random()*0.4).toFixed(2)+'s';    // 粒ごとに速さを変える
-            document.body.appendChild(s);
-            setTimeout(()=>s.remove(),1400);
+        /* 更新帯をタップした時の「ヒビ→崩落」演出（パキ…パキパキパキ…ガッシャーン） */
+        /* 「パキッ」1回分の音。硬い木/ガラスが割れる短いクラック音を合成する */
+        function crackSound(delaySec, pitch){
+          try{
+            const ctx=getAudioCtx(); if(!ctx) return;
+            const t=ctx.currentTime+(delaySec||0);
+            const dur=0.09;
+            // 芯になる短いノイズ（バンドパスで“パキッ”の帯域だけ通す）
+            const buf=ctx.createBuffer(1, Math.ceil(ctx.sampleRate*dur), ctx.sampleRate);
+            const d=buf.getChannelData(0);
+            for(let i=0;i<d.length;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.2); }
+            const src=ctx.createBufferSource(); src.buffer=buf;
+            const bp=ctx.createBiquadFilter(); bp.type='bandpass';
+            bp.frequency.setValueAtTime(2600*(pitch||1), t); bp.Q.value=5;
+            const g=ctx.createGain();
+            g.gain.setValueAtTime(0.34, t);
+            g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+            src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+            src.start(t); src.stop(t+dur+0.01);
+            // 上に乗せる金属的な“キン”（爽やかさを出す）
+            const o=ctx.createOscillator(), og=ctx.createGain();
+            o.type='triangle';
+            o.frequency.setValueAtTime(2100*(pitch||1), t);
+            o.frequency.exponentialRampToValueAtTime(1200*(pitch||1), t+0.07);
+            og.gain.setValueAtTime(0.12, t);
+            og.gain.exponentialRampToValueAtTime(0.0001, t+0.08);
+            o.connect(og); og.connect(ctx.destination);
+            o.start(t); o.stop(t+0.1);
+          }catch(e){}
+        }
+        /* 「ガッシャーン」。高音のきらめきを重ねて“爽快に砕ける”感じにする */
+        function smashSound(delaySec){
+          try{
+            const ctx=getAudioCtx(); if(!ctx) return;
+            const t0=ctx.currentTime+(delaySec||0);
+            const dur=1.15;
+            // 砕けたガラスが降り注ぐノイズ（高域中心＝爽快）
+            const buf=ctx.createBuffer(1, Math.ceil(ctx.sampleRate*dur), ctx.sampleRate);
+            const d=buf.getChannelData(0);
+            for(let i=0;i<d.length;i++){
+              const p=i/d.length;
+              // パラパラ感: ランダムに粒を立てる
+              const grain=(Math.random()<0.06)?(Math.random()*2-1):(Math.random()*2-1)*0.25;
+              d[i]=grain*Math.pow(1-p,1.5);
+            }
+            const src=ctx.createBufferSource(); src.buffer=buf;
+            const hp=ctx.createBiquadFilter(); hp.type='highpass';
+            hp.frequency.setValueAtTime(1500,t0);
+            hp.frequency.exponentialRampToValueAtTime(3500,t0+dur);   // だんだん高く=粒が細かくなる
+            const g=ctx.createGain();
+            g.gain.setValueAtTime(0.0001,t0);
+            g.gain.exponentialRampToValueAtTime(0.5,t0+0.03);
+            g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+            src.connect(hp); hp.connect(g); g.connect(ctx.destination);
+            src.start(t0); src.stop(t0+dur+0.02);
+            // きらめき（高音のベル）を数発ばらして重ねる＝爽快感
+            [0,0.05,0.12,0.2,0.3,0.45].forEach((off,i)=>{
+              const o=ctx.createOscillator(), og=ctx.createGain();
+              o.type='sine';
+              const f=2400+Math.random()*2200;
+              o.frequency.setValueAtTime(f,t0+off);
+              o.frequency.exponentialRampToValueAtTime(f*0.75,t0+off+0.35);
+              og.gain.setValueAtTime(0.10/(i*0.5+1),t0+off);
+              og.gain.exponentialRampToValueAtTime(0.0001,t0+off+0.4);
+              o.connect(og); og.connect(ctx.destination);
+              o.start(t0+off); o.stop(t0+off+0.42);
+            });
+            // 低音の一撃（重み）
+            const lo=ctx.createOscillator(), lg=ctx.createGain();
+            lo.type='sine';
+            lo.frequency.setValueAtTime(150,t0);
+            lo.frequency.exponentialRampToValueAtTime(45,t0+0.35);
+            lg.gain.setValueAtTime(0.32,t0);
+            lg.gain.exponentialRampToValueAtTime(0.0001,t0+0.45);
+            lo.connect(lg); lg.connect(ctx.destination);
+            lo.start(t0); lo.stop(t0+0.5);
+          }catch(e){}
+        }
+        /* 中央から左右へ枝分かれするヒビのパスを作る */
+        function gbCrackPath(cx, cy, dir, W, H, maxLen){
+          let x=cx, y=cy, ang=(dir>0?0:Math.PI)+(Math.random()-0.5)*0.7;
+          let dd=`M ${x.toFixed(1)} ${y.toFixed(1)}`;
+          const steps=5+Math.floor(Math.random()*4);
+          for(let i=0;i<steps;i++){
+            const seg=maxLen/steps*(0.7+Math.random()*0.7);
+            ang += (Math.random()-0.5)*0.9;                 // ジグザグに折れる
+            x += Math.cos(ang)*seg;
+            y += Math.sin(ang)*seg*0.55;                    // 横に広がりやすく
+            x=Math.max(-20,Math.min(W+20,x)); y=Math.max(-20,Math.min(H+20,y));
+            dd += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
           }
+          return dd;
+        }
+        /* ヒビを1グループ描き足す。band=画面のどの高さ帯に出すか(0〜1) */
+        function gbAddCracks(svg, W, H, bandTop, bandBottom, count){
+          const cx=W/2;
+          for(let i=0;i<count;i++){
+            const cy=H*(bandTop+Math.random()*(bandBottom-bandTop));
+            [1,-1].forEach(dir=>{
+              const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+              p.setAttribute('class','crack');
+              p.setAttribute('d', gbCrackPath(cx,cy,dir,W,H,W*0.62));
+              svg.appendChild(p);
+              const len=p.getTotalLength ? p.getTotalLength() : 400;
+              p.style.setProperty('--len', len.toFixed(0));
+            });
+          }
+        }
+        function playUpdateBurst(b){
+          if(b) b.classList.add('burst');                 // 帯は消える
+          playGlassBreak();
+        }
+        /* ヒビ→崩落の本体（更新帯タップ・検索結果を消すの両方から使う） */
+        function playGlassBreak(){
+          const W=window.innerWidth, H=window.innerHeight;
+          const layer=document.createElement('div'); layer.id='glass-break';
+          const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+          svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('preserveAspectRatio','none');
+          layer.appendChild(svg); document.body.appendChild(layer);
+
+          // ① パキ… 上1/3にヒビ
+          crackSound(0, 1.15);
+          if(navigator.vibrate) navigator.vibrate(18);
+          gbAddCracks(svg,W,H,0.06,0.33,2);
+
+          // ② パキパキパキ… 画面全体へ広がる
+          const t2=[380,530,660];
+          t2.forEach((ms,i)=>{
+            setTimeout(()=>{
+              crackSound(0, 1.0-i*0.12);
+              if(navigator.vibrate) navigator.vibrate(14);
+              const top=[0.28,0.5,0.68][i], bot=[0.55,0.78,1.0][i];
+              gbAddCracks(svg,W,H,top,bot,i===2?3:2);
+            }, ms);
+          });
+
+          // ③ ガッシャーン！ 崩落
+          setTimeout(()=>{
+            smashSound(0);
+            if(navigator.vibrate) navigator.vibrate([0,60,40,120]);
+            const fl=document.createElement('div'); fl.id='gb-flash'; document.body.appendChild(fl);
+            document.body.classList.add('gb-shake');
+            // 画面をタイル状に割って落とす
+            const cols=6, rows=9, cw=W/cols, ch=H/rows;
+            for(let r=0;r<rows;r++){
+              for(let c=0;c<cols;c++){
+                const sh=document.createElement('div'); sh.className='gb-shard';
+                sh.style.left=(c*cw)+'px'; sh.style.top=(r*ch)+'px';
+                sh.style.width=cw+'px'; sh.style.height=ch+'px';
+                sh.style.setProperty('--dx', ((c-(cols-1)/2)*(6+Math.random()*26)).toFixed(0)+'px');
+                sh.style.setProperty('--rot', ((Math.random()-0.5)*90).toFixed(0)+'deg');
+                sh.style.setProperty('--dur', (0.75+Math.random()*0.5).toFixed(2)+'s');
+                sh.style.animationDelay=((rows-r)*0.012+Math.random()*0.06).toFixed(3)+'s';  // 下から順に崩れる
+                document.body.appendChild(sh);
+                setTimeout(()=>sh.remove(),1700);
+              }
+            }
+            setTimeout(()=>{ svg.style.transition='opacity .35s'; svg.style.opacity='0'; },160);
+            setTimeout(()=>{ fl.remove(); document.body.classList.remove('gb-shake'); },700);
+            setTimeout(()=>layer.remove(),1800);
+          }, 860);
         }
     </script>
 </body>
