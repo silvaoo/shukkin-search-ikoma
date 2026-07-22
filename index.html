@@ -2121,7 +2121,7 @@
           if(!c || !c.innerHTML){ return; }              // 結果が無い時は何もしない
           if(window._gbClearing) return; window._gbClearing=true;
           playGlassBreak();                              // ヒビ→崩落の演出
-          setTimeout(()=>{ window.location.reload(); }, 430);   // 崩れ落ちきってから再読み込み
+          setTimeout(()=>{ window.location.reload(); }, (window._gbReloadMs||430));   // 崩れ落ちきってから再読み込み
         }
         window.addEventListener('pageshow', function(e){ if(e.persisted){ clearRangeResults(); } }); // iOS: リロード/キャッシュ復元時に検索結果を消す(Androidと同じ挙動に)
         function icsEsc(t){ return String(t==null?'':t).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
@@ -3233,7 +3233,7 @@
             setTimeout(()=>{
               b.classList.remove('burst'); b.style.display='none';
               b._bursting=false; document.body.style.paddingTop='';
-            },430);
+            },(window._gbReloadMs||430));
             return;
           }
           b._bursting=true;
@@ -3245,7 +3245,7 @@
               if(reg&&reg.waiting){reg.waiting.postMessage('SKIP_WAITING');}
               else{window.location.reload();}
             }).catch(()=>window.location.reload());
-          },430);
+          },(window._gbReloadMs||430));
         }
         /* 更新帯をタップした時の「ヒビ→崩落」演出（パキ…パキパキパキ…ガッシャーン） */
         /* 「パキッ」1回分の音。硬い木/ガラスが割れる短いクラック音を合成する */
@@ -3394,6 +3394,31 @@
             gbAppend(svg, gbLine(x1,y1,x1+Math.cos(ang)*len,y1+Math.sin(ang)*len), 1+Math.random()*1.2);
           }
         }
+        /* 端末の性能を見て演出の重さを決める。
+           重い端末(コア数/メモリが少ない、実測の描画が遅い)では自動で軽量版にする。 */
+        function gbPerfTier(){
+          if(window._gbTier) return window._gbTier;
+          let score=0;
+          const cores=navigator.hardwareConcurrency||4;
+          const mem=navigator.deviceMemory||4;              // 対応端末のみ(iOSは未対応→undefined)
+          score += cores>=8?2:(cores>=6?1:0);
+          score += mem>=8?2:(mem>=4?1:0);
+          // 実測: 短い描画ループにかかった時間で判定(重い端末ほど時間がかかる)
+          try{
+            const t0=performance.now();
+            const box=document.createElement('div');
+            box.style.cssText='position:fixed;left:-9999px;top:0;width:10px;height:10px;';
+            document.body.appendChild(box);
+            for(let i=0;i<220;i++){ box.style.transform='translate('+i+'px,'+i+'px) rotate('+i+'deg)'; void box.offsetHeight; }
+            const el=performance.now()-t0;
+            box.remove();
+            score += el<28?2:(el<60?1:0);
+          }catch(e){ score+=1; }
+          // 省電力/アニメ抑制の設定がONなら必ず軽量
+          if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) score=-1;
+          window._gbTier = score>=4 ? 'rich' : (score>=2 ? 'mid' : 'lite');
+          return window._gbTier;
+        }
         function playUpdateBurst(b){
           if(b) b.classList.add('burst');                 // 帯は消える
           playGlassBreak();
@@ -3401,6 +3426,14 @@
         /* ヒビ→崩落の本体（更新帯タップ・検索結果を消すの両方から使う） */
         function playGlassBreak(){
           const W=window.innerWidth, H=window.innerHeight;
+          const tier=gbPerfTier();
+          // 端末の重さに応じて、ヒビの量・破片の枚数・速さを変える
+          const CFG = tier==='rich'
+            ? {rad:8, mesh:42, ringN:2, cols:6, rows:8,  t:[65,105,145], tShat:175, tFall:225, reload:430, dur:[0.13,0.08], half:false}
+            : tier==='mid'
+            ? {rad:6, mesh:24, ringN:1, cols:5, rows:6,  t:[55,90,125],  tShat:150, tFall:195, reload:380, dur:[0.12,0.06], half:false}
+            : {rad:5, mesh:12, ringN:1, cols:4, rows:4,  t:[45,75,105],  tShat:125, tFall:165, reload:330, dur:[0.10,0.05], half:true};
+          window._gbReloadMs = CFG.reload;   // 復帰までの時間も端末に合わせる
           const layer=document.createElement('div'); layer.id='glass-break';
           const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
           svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('preserveAspectRatio','none');
@@ -3411,19 +3444,19 @@
           const rad1=[];
           crackSound(0, 1.15);
           if(navigator.vibrate) navigator.vibrate(18);
-          gbAddRadials(svg,c1x,c1y,7,W*0.30,W*0.55,rad1);
+          gbAddRadials(svg,c1x,c1y,CFG.rad,W*0.30,W*0.55,rad1);
           gbAddRings(svg,c1x,c1y,rad1,1,W*0.16,W*0.34);
 
           // ② パキ、パキ、パキ… ヒビが縦にも横にも走り、画面全体へ広がる
           const centers=[[W/2,H*0.42],[W*0.30,H*0.68],[W*0.72,H*0.86]];
-          [65,105,145].forEach((ms,i)=>{
+          CFG.t.forEach((ms,i)=>{
             setTimeout(()=>{
               crackSound(0, 1.0-i*0.12);
               if(navigator.vibrate) navigator.vibrate(14);
               const cx=centers[i][0], cy=centers[i][1];
               const rad=[];
-              gbAddRadials(svg,cx,cy,6+i,W*0.34,W*0.78,rad);   // 主ヒビ（直線的・全方向）
-              gbAddRings(svg,cx,cy,rad,2,W*0.14,W*0.52);        // 破片の形を作る同心ヒビ
+              gbAddRadials(svg,cx,cy,CFG.rad+i,W*0.34,W*0.78,rad);   // 主ヒビ（直線的・全方向）
+              gbAddRings(svg,cx,cy,rad,CFG.ringN,W*0.14,W*0.52);        // 破片の形を作る同心ヒビ
               // 1つ前の中心へ向かう連絡ヒビ（画面がつながって割れていく感じ）
               if(i>0){
                 const p=centers[i-1];
@@ -3436,11 +3469,11 @@
           setTimeout(()=>{
             crackSound(0,1.35); crackSound(0.05,1.1);
             if(navigator.vibrate) navigator.vibrate(22);
-            gbAddShatterMesh(svg,W,H,42);
+            gbAddShatterMesh(svg,W,H,CFG.mesh);
             const rc=[];
-            gbAddRadials(svg,W/2,H/2,9,W*0.5,W*1.0,rc);
-            gbAddRings(svg,W/2,H/2,rc,2,W*0.18,W*0.72);
-          }, 175);
+            gbAddRadials(svg,W/2,H/2,CFG.rad+1,W*0.5,W*1.0,rc);
+            gbAddRings(svg,W/2,H/2,rc,CFG.ringN,W*0.18,W*0.72);
+          }, CFG.tShat);
 
           // ③ ガッシャーン！ 崩落
           setTimeout(()=>{
@@ -3449,15 +3482,16 @@
             const fl=document.createElement('div'); fl.id='gb-flash'; document.body.appendChild(fl);
             document.body.classList.add('gb-shake');
             // 画面をタイル状に割って落とす
-            const cols=6, rows=8, cw=W/cols, ch=H/rows;
-            for(let r=0;r<rows;r++){
+            const cols=CFG.cols, rows=CFG.rows, cw=W/cols, ch=H/rows;
+            const rowMax = CFG.half ? Math.ceil(rows/2) : rows;   // 重い端末は上半分だけ崩す
+            for(let r=0;r<rowMax;r++){
               for(let c=0;c<cols;c++){
                 const sh=document.createElement('div'); sh.className='gb-shard';
                 sh.style.left=(c*cw)+'px'; sh.style.top=(r*ch)+'px';
                 sh.style.width=cw+'px'; sh.style.height=ch+'px';
                 sh.style.setProperty('--dx', ((c-(cols-1)/2)*(1+Math.random()*3)).toFixed(0)+'px');
                 sh.style.setProperty('--rot', ((Math.random()-0.5)*24).toFixed(0)+'deg');
-                sh.style.setProperty('--dur', (0.13+Math.random()*0.08).toFixed(2)+'s');
+                sh.style.setProperty('--dur', (CFG.dur[0]+Math.random()*CFG.dur[1]).toFixed(2)+'s');
                 sh.style.animationDelay=((rows-r)*0.006+Math.random()*0.008).toFixed(3)+'s';  // 下から順に崩れる
                 document.body.appendChild(sh);
                 setTimeout(()=>sh.remove(),500);
@@ -3466,7 +3500,7 @@
             setTimeout(()=>{ svg.style.transition='opacity .35s'; svg.style.opacity='0'; },160);
             setTimeout(()=>{ fl.remove(); document.body.classList.remove('gb-shake'); },330);
             setTimeout(()=>layer.remove(),500);
-          }, 225);
+          }, CFG.tFall);
         }
     </script>
 </body>
