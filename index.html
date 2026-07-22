@@ -797,7 +797,7 @@
           fill: none; stroke: #f2f5f8; stroke-width: 3.4; stroke-linecap: round;
           filter: drop-shadow(0 0 4px rgba(255,255,255,1)) drop-shadow(0 0 12px rgba(200,215,235,0.95)) drop-shadow(0 0 22px rgba(150,175,205,0.6));
           stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
-          animation: gb-draw 0.07s linear forwards;
+          animation: gb-draw 0.05s linear forwards;
         }
         @keyframes gb-draw { to { stroke-dashoffset: 0; } }
         /* 破片: 画面のスクショ代わりに半透明ガラス板を割って落とす */
@@ -821,7 +821,7 @@
         }
         @keyframes gb-flash { 0% { opacity: 0.5; } 100% { opacity: 0; } }
         /* 画面全体の揺れ */
-        .gb-shake { animation: gb-shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        .gb-shake { animation: gb-shake 0.22s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes gb-shake {
           10%,90% { transform: translate(-2px, 1px); }
           20%,80% { transform: translate(4px, -2px); }
@@ -2121,7 +2121,7 @@
           if(!c || !c.innerHTML){ return; }              // 結果が無い時は何もしない
           if(window._gbClearing) return; window._gbClearing=true;
           playGlassBreak();                              // ヒビ→崩落の演出
-          setTimeout(()=>{ window.location.reload(); }, 560);   // 崩れ落ちきってから再読み込み
+          setTimeout(()=>{ window.location.reload(); }, 430);   // 崩れ落ちきってから再読み込み
         }
         window.addEventListener('pageshow', function(e){ if(e.persisted){ clearRangeResults(); } }); // iOS: リロード/キャッシュ復元時に検索結果を消す(Androidと同じ挙動に)
         function icsEsc(t){ return String(t==null?'':t).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
@@ -3233,7 +3233,7 @@
             setTimeout(()=>{
               b.classList.remove('burst'); b.style.display='none';
               b._bursting=false; document.body.style.paddingTop='';
-            },560);
+            },430);
             return;
           }
           b._bursting=true;
@@ -3245,7 +3245,7 @@
               if(reg&&reg.waiting){reg.waiting.postMessage('SKIP_WAITING');}
               else{window.location.reload();}
             }).catch(()=>window.location.reload());
-          },560);
+          },430);
         }
         /* 更新帯をタップした時の「ヒビ→崩落」演出（パキ…パキパキパキ…ガッシャーン） */
         /* 「パキッ」1回分の音。硬い木/ガラスが割れる短いクラック音を合成する */
@@ -3416,13 +3416,13 @@
 
           // ② パキ、パキ、パキ… ヒビが縦にも横にも走り、画面全体へ広がる
           const centers=[[W/2,H*0.42],[W*0.30,H*0.68],[W*0.72,H*0.86]];
-          [95,150,205].forEach((ms,i)=>{
+          [65,105,145].forEach((ms,i)=>{
             setTimeout(()=>{
               crackSound(0, 1.0-i*0.12);
               if(navigator.vibrate) navigator.vibrate(14);
               const cx=centers[i][0], cy=centers[i][1];
               const rad=[];
-              gbAddRadials(svg,cx,cy,8+i,W*0.34,W*0.78,rad);   // 主ヒビ（直線的・全方向）
+              gbAddRadials(svg,cx,cy,6+i,W*0.34,W*0.78,rad);   // 主ヒビ（直線的・全方向）
               gbAddRings(svg,cx,cy,rad,2,W*0.14,W*0.52);        // 破片の形を作る同心ヒビ
               // 1つ前の中心へ向かう連絡ヒビ（画面がつながって割れていく感じ）
               if(i>0){
@@ -3436,11 +3436,11 @@
           setTimeout(()=>{
             crackSound(0,1.35); crackSound(0.05,1.1);
             if(navigator.vibrate) navigator.vibrate(22);
-            gbAddShatterMesh(svg,W,H,70);
+            gbAddShatterMesh(svg,W,H,42);
             const rc=[];
-            gbAddRadials(svg,W/2,H/2,12,W*0.5,W*1.0,rc);
-            gbAddRings(svg,W/2,H/2,rc,3,W*0.18,W*0.72);
-          }, 245);
+            gbAddRadials(svg,W/2,H/2,9,W*0.5,W*1.0,rc);
+            gbAddRings(svg,W/2,H/2,rc,2,W*0.18,W*0.72);
+          }, 175);
 
           // ③ ガッシャーン！ 崩落
           setTimeout(()=>{
@@ -3449,7 +3449,7 @@
             const fl=document.createElement('div'); fl.id='gb-flash'; document.body.appendChild(fl);
             document.body.classList.add('gb-shake');
             // 画面をタイル状に割って落とす
-            const cols=9, rows=14, cw=W/cols, ch=H/rows;
+            const cols=6, rows=8, cw=W/cols, ch=H/rows;
             for(let r=0;r<rows;r++){
               for(let c=0;c<cols;c++){
                 const sh=document.createElement('div'); sh.className='gb-shard';
@@ -3457,16 +3457,16 @@
                 sh.style.width=cw+'px'; sh.style.height=ch+'px';
                 sh.style.setProperty('--dx', ((c-(cols-1)/2)*(1+Math.random()*3)).toFixed(0)+'px');
                 sh.style.setProperty('--rot', ((Math.random()-0.5)*24).toFixed(0)+'deg');
-                sh.style.setProperty('--dur', (0.18+Math.random()*0.12).toFixed(2)+'s');
-                sh.style.animationDelay=((rows-r)*0.010+Math.random()*0.012).toFixed(3)+'s';  // 下から順に崩れる
+                sh.style.setProperty('--dur', (0.13+Math.random()*0.08).toFixed(2)+'s');
+                sh.style.animationDelay=((rows-r)*0.006+Math.random()*0.008).toFixed(3)+'s';  // 下から順に崩れる
                 document.body.appendChild(sh);
-                setTimeout(()=>sh.remove(),650);
+                setTimeout(()=>sh.remove(),500);
               }
             }
             setTimeout(()=>{ svg.style.transition='opacity .35s'; svg.style.opacity='0'; },160);
             setTimeout(()=>{ fl.remove(); document.body.classList.remove('gb-shake'); },330);
-            setTimeout(()=>layer.remove(),650);
-          }, 310);
+            setTimeout(()=>layer.remove(),500);
+          }, 225);
         }
     </script>
 </body>
