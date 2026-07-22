@@ -797,7 +797,7 @@
           fill: none; stroke: #f2f5f8; stroke-width: 3.4; stroke-linecap: round;
           filter: drop-shadow(0 0 4px rgba(255,255,255,1)) drop-shadow(0 0 12px rgba(200,215,235,0.95)) drop-shadow(0 0 22px rgba(150,175,205,0.6));
           stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
-          animation: gb-draw 0.1s linear forwards;
+          animation: gb-draw 0.07s linear forwards;
         }
         @keyframes gb-draw { to { stroke-dashoffset: 0; } }
         /* 破片: 画面のスクショ代わりに半透明ガラス板を割って落とす */
@@ -807,21 +807,21 @@
           border: 1.5px solid rgba(240,246,252,0.98);
           box-shadow: 0 0 14px rgba(255,255,255,0.5) inset, 0 0 20px rgba(190,210,235,0.55);
           will-change: transform, opacity;
-          animation: gb-fall var(--dur,1s) cubic-bezier(.36,.05,.6,1) forwards;
+          animation: gb-fall var(--dur,1s) cubic-bezier(.55,.02,.9,.72) forwards;
         }
         @keyframes gb-fall {
           0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          12%  { transform: translate(calc(var(--dx)*0.12), -14px) rotate(calc(var(--rot)*0.12)); opacity: 1; }
+          8%   { transform: translate(calc(var(--dx)*0.08), -6px) rotate(calc(var(--rot)*0.08)); opacity: 1; }
           100% { transform: translate(var(--dx), 115vh) rotate(var(--rot)); opacity: 0.9; }
         }
         /* 割れた瞬間の白フラッシュ */
         #gb-flash {
           position: fixed; inset: 0; z-index: 10048; pointer-events: none; background: #fff; opacity: 0;
-          animation: gb-flash 0.42s ease-out forwards;
+          animation: gb-flash 0.26s ease-out forwards;
         }
         @keyframes gb-flash { 0% { opacity: 0.5; } 100% { opacity: 0; } }
         /* 画面全体の揺れ */
-        .gb-shake { animation: gb-shake 0.45s cubic-bezier(.36,.07,.19,.97) both; }
+        .gb-shake { animation: gb-shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes gb-shake {
           10%,90% { transform: translate(-2px, 1px); }
           20%,80% { transform: translate(4px, -2px); }
@@ -2121,7 +2121,7 @@
           if(!c || !c.innerHTML){ return; }              // 結果が無い時は何もしない
           if(window._gbClearing) return; window._gbClearing=true;
           playGlassBreak();                              // ヒビ→崩落の演出
-          setTimeout(()=>{ window.location.reload(); }, 800);   // 崩れ落ちきってから再読み込み
+          setTimeout(()=>{ window.location.reload(); }, 560);   // 崩れ落ちきってから再読み込み
         }
         window.addEventListener('pageshow', function(e){ if(e.persisted){ clearRangeResults(); } }); // iOS: リロード/キャッシュ復元時に検索結果を消す(Androidと同じ挙動に)
         function icsEsc(t){ return String(t==null?'':t).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
@@ -3233,7 +3233,7 @@
             setTimeout(()=>{
               b.classList.remove('burst'); b.style.display='none';
               b._bursting=false; document.body.style.paddingTop='';
-            },800);
+            },560);
             return;
           }
           b._bursting=true;
@@ -3245,7 +3245,7 @@
               if(reg&&reg.waiting){reg.waiting.postMessage('SKIP_WAITING');}
               else{window.location.reload();}
             }).catch(()=>window.location.reload());
-          },800);
+          },560);
         }
         /* 更新帯をタップした時の「ヒビ→崩落」演出（パキ…パキパキパキ…ガッシャーン） */
         /* 「パキッ」1回分の音。硬い木/ガラスが割れる短いクラック音を合成する */
@@ -3416,7 +3416,7 @@
 
           // ② パキ、パキ、パキ… ヒビが縦にも横にも走り、画面全体へ広がる
           const centers=[[W/2,H*0.42],[W*0.30,H*0.68],[W*0.72,H*0.86]];
-          [150,225,300].forEach((ms,i)=>{
+          [95,150,205].forEach((ms,i)=>{
             setTimeout(()=>{
               crackSound(0, 1.0-i*0.12);
               if(navigator.vibrate) navigator.vibrate(14);
@@ -3440,7 +3440,7 @@
             const rc=[];
             gbAddRadials(svg,W/2,H/2,12,W*0.5,W*1.0,rc);
             gbAddRings(svg,W/2,H/2,rc,3,W*0.18,W*0.72);
-          }, 350);
+          }, 245);
 
           // ③ ガッシャーン！ 崩落
           setTimeout(()=>{
@@ -3457,16 +3457,16 @@
                 sh.style.width=cw+'px'; sh.style.height=ch+'px';
                 sh.style.setProperty('--dx', ((c-(cols-1)/2)*(6+Math.random()*26)).toFixed(0)+'px');
                 sh.style.setProperty('--rot', ((Math.random()-0.5)*90).toFixed(0)+'deg');
-                sh.style.setProperty('--dur', (0.34+Math.random()*0.2).toFixed(2)+'s');
-                sh.style.animationDelay=((rows-r)*0.004+Math.random()*0.03).toFixed(3)+'s';  // 下から順に崩れる
+                sh.style.setProperty('--dur', (0.18+Math.random()*0.12).toFixed(2)+'s');
+                sh.style.animationDelay=((rows-r)*0.002+Math.random()*0.015).toFixed(3)+'s';  // 下から順に崩れる
                 document.body.appendChild(sh);
-                setTimeout(()=>sh.remove(),900);
+                setTimeout(()=>sh.remove(),650);
               }
             }
             setTimeout(()=>{ svg.style.transition='opacity .35s'; svg.style.opacity='0'; },160);
-            setTimeout(()=>{ fl.remove(); document.body.classList.remove('gb-shake'); },520);
-            setTimeout(()=>layer.remove(),900);
-          }, 450);
+            setTimeout(()=>{ fl.remove(); document.body.classList.remove('gb-shake'); },330);
+            setTimeout(()=>layer.remove(),650);
+          }, 310);
         }
     </script>
 </body>
