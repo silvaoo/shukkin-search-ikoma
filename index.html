@@ -1913,6 +1913,20 @@
           document.getElementById('ivImg').src=src;
           v.classList.add('on');
         }
+        /* メモ一覧から画像を拡大表示する（キー指定） */
+        function openImgViewerSrc(key,kind,idx){
+          const list = kind==='date' ? getDateImgs(key) : getDialImgs(key);
+          const src=list[idx]; if(!src) return;
+          let v=document.getElementById('imgViewer');
+          if(!v){
+            v=document.createElement('div'); v.id='imgViewer';
+            v.innerHTML='<button class="iv-close" onclick="closeImgViewer()">✕ 閉じる</button><img id="ivImg">';
+            v.addEventListener('click',(e)=>{ if(e.target===v) closeImgViewer(); });
+            document.body.appendChild(v);
+          }
+          document.getElementById('ivImg').src=src;
+          v.classList.add('on');
+        }
         function closeImgViewer(){
           const v=document.getElementById('imgViewer'); if(v) v.classList.remove('on');
         }
@@ -2313,7 +2327,9 @@
 
           // --- 日付のメモ（日付順。過ぎた日は薄く表示する） ---
           const dm=loadMemos(MEMO_DATE_KEY);
-          const dkeys=Object.keys(dm).sort();
+          const dimgs=loadImgs(MEMOIMG_DATE_KEY);
+          // 画像だけのメモも一覧に出す
+          const dkeys=[...new Set([...Object.keys(dm), ...Object.keys(dimgs)])].sort();
           let h='';
           if(dkeys.length===0){
             h='<div class="ml-empty">日付のメモはまだありません。<br>検索結果の「📝 メモを追加」から書けます。</div>';
@@ -2332,7 +2348,8 @@
                     <button class="ml-act del" onclick="deleteMemoItem('date','${k}')">削除</button>
                   </div>
                 </div>
-                <div class="ml-text">${escapeHtml(dm[k])}</div>
+                ${dm[k]?`<div class="ml-text">${escapeHtml(dm[k])}</div>`:''}
+                ${(dimgs[k]||[]).length?`<div class="mimg-view">${(dimgs[k]||[]).map((src,i)=>`<img src="${src}" onclick="openImgViewerSrc('${k}','date',${i})">`).join('')}</div>`:''}
               </div>`;
             });
             if(dkeys.some(k=>k<todayIso)){
@@ -2343,7 +2360,8 @@
 
           // --- ダイヤ番号のメモ（番号順） ---
           const lm=loadMemos(MEMO_DIAL_KEY);
-          const lkeys=Object.keys(lm).sort((a,b)=>Number(a)-Number(b));
+          const limgs=loadImgs(MEMOIMG_DIAL_KEY);
+          const lkeys=[...new Set([...Object.keys(lm), ...Object.keys(limgs)])].sort((a,b)=>Number(a)-Number(b));
           let h2='';
           if(lkeys.length===0){
             h2='<div class="ml-empty">ダイヤ番号のメモはまだありません。<br>検索結果の「📝 メモを追加」から書けます。</div>';
@@ -2358,7 +2376,8 @@
                     <button class="ml-act del" onclick="deleteMemoItem('dial','${k}')">削除</button>
                   </div>
                 </div>
-                <div class="ml-text">${escapeHtml(lm[k])}</div>
+                ${lm[k]?`<div class="ml-text">${escapeHtml(lm[k])}</div>`:''}
+                ${(limgs[k]||[]).length?`<div class="mimg-view">${(limgs[k]||[]).map((src,i)=>`<img src="${src}" onclick="openImgViewerSrc('${k}','dial',${i})">`).join('')}</div>`:''}
               </div>`;
             });
           }
@@ -2417,11 +2436,15 @@
         }
         function deleteMemoItem(type,key){
           const label=type==='date'?`${key} のメモ`:`${key}番ダイヤのメモ`;
-          if(!confirm(`${label}を削除します。よろしいですか？`))return;
+          if(!confirm(`${label}を削除します。よろしいですか？\n※貼った画像も一緒に消えます`))return;
           const store=type==='date'?MEMO_DATE_KEY:MEMO_DIAL_KEY;
           const obj=loadMemos(store);
           delete obj[key];
           saveMemos(store,obj);
+          const istore=type==='date'?MEMOIMG_DATE_KEY:MEMOIMG_DIAL_KEY;
+          const iobj=loadImgs(istore);
+          delete iobj[key];
+          saveImgs(istore,iobj);
           showToast('🗑 メモを削除しました');
           renderMemoList();
           refreshMemoViews();
