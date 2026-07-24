@@ -340,6 +340,12 @@
           cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
         }
         .ml-cal-btn:active { filter: brightness(0.92); }
+        .ml-cal-dl {
+          width: 100%; margin-top: 6px; padding: 7px; border: none; border-radius: 8px;
+          background: transparent; color: var(--muted-text); font-size: 11.5px; font-weight: 700;
+          text-decoration: underline; cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+        }
+        .ml-cal-dl:active { color: var(--text-color); }
         .rescal-legend {
           margin-top: 8px; font-size: 10.5px; color: #6a6a80;
           text-align: center; line-height: 1.6;
@@ -2123,11 +2129,31 @@
           const ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//出退勤検索くん//JP\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n'+ev+'END:VCALENDAR\r\n';
           try{
             const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+            const fname='勤務カレンダー.ics';
+            // ① 共有メニューが使える端末は、そこから直接カレンダーアプリへ渡す(ダウンロード不要)
+            let file=null;
+            try{ file=new File([blob], fname, {type:'text/calendar'}); }catch(e){}
+            if(!window._icsForceDownload && file && navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
+              navigator.share({files:[file], title:'勤務カレンダー'})
+                .then(()=>{ showToast('📅 '+count+'件をカレンダーに送りました'); })
+                .catch((err)=>{
+                  if(err && err.name==='AbortError') return;      // 利用者が共有をやめただけ
+                  gbDownloadICS(blob, fname, count);              // 共有が失敗したらダウンロードで代替
+                });
+              return;
+            }
+            // ② 共有が使えない端末はダウンロード
+            gbDownloadICS(blob, fname, count);
+          }catch(e){ showToast('書き出しに失敗しました'); }
+        }
+        /* .icsをダウンロードで渡す(共有が使えない端末用) */
+        function gbDownloadICS(blob, fname, count){
+          try{
             const url=URL.createObjectURL(blob);
-            const a=document.createElement('a'); a.href=url; a.download='勤務カレンダー.ics';
+            const a=document.createElement('a'); a.href=url; a.download=fname;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
             setTimeout(()=>URL.revokeObjectURL(url),2000);
-            showToast('📅 '+count+'件をカレンダー用に書き出しました');
+            showToast('📅 '+count+'件を書き出しました。ファイルを開いてカレンダーに追加してください');
           }catch(e){ showToast('書き出しに失敗しました'); }
         }
         function saveCurrentCal(){
@@ -2154,6 +2180,13 @@
           const item=loadCalList().find(c=>c.id===id);
           if(!item){ showToast('見つかりませんでした'); return; }
           exportCalendarICS(item.rows);
+        }
+        /* 共有メニューを使わず、必ずダウンロードで書き出す(共有がうまく動かない端末用) */
+        function exportSavedCalDL(id){
+          const item=loadCalList().find(c=>c.id===id);
+          if(!item){ showToast('見つかりませんでした'); return; }
+          window._icsForceDownload=true;
+          try{ exportCalendarICS(item.rows); } finally { window._icsForceDownload=false; }
         }
         function switchMemoList(which){
           const panes={date:'mlPaneDate',dial:'mlPaneDial',cal:'mlPaneCal'};
@@ -2240,6 +2273,7 @@
                   </div>
                 </div>
                 <button class="ml-cal-btn" onclick="exportSavedCal('${c.id}')">📅 カレンダーアプリに一括保存</button>
+                <button class="ml-cal-dl" onclick="exportSavedCalDL('${c.id}')">うまくいかない時はコチラ（ファイルで保存）</button>
               </div>`;
             });
           }
