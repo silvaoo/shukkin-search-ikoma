@@ -289,16 +289,6 @@
         .cal-ok:disabled { opacity: 0.35; cursor: default; }
 
         /* ==== 検索結果カレンダー（番号と出退勤時間を一覧表示） ==== */
-        .act-cal {
-          background: rgba(0,230,118,0.16); color: var(--accent-yellow);
-          border: 1px solid rgba(0,230,118,0.55);
-        }
-        .act-more {
-          background: rgba(0,210,211,0.16); color: var(--accent-cyan);
-          border: 1px solid rgba(0,210,211,0.6);
-        }
-        .act-more:active { background: rgba(0,210,211,0.85); color: #002; }
-        .act-cal:active { background: rgba(0,230,118,0.85); color: #002; }
         /* 画面の縦を目一杯使って、マスと文字を大きくする */
         .rescal-grid .cal-day {
           aspect-ratio: auto; min-height: 104px;
@@ -749,6 +739,12 @@
         .act-copy:active { background: #1dd1a1; color: #000; }
         .act-tts { border-color: #feca57; color: #feca57; }
         .act-tts:active { background: #feca57; color: #000; }
+        .act-cal, .act-more {
+          background: var(--toggle-bg);
+          border: 2px solid var(--accent-cyan);
+          color: var(--accent-cyan);
+        }
+        .act-cal:active, .act-more:active { background: var(--accent-cyan); color: #002; }
 
         /* ==== トースト通知 ==== */
         .toast {
