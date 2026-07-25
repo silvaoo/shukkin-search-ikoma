@@ -315,6 +315,8 @@
         .rc-t { font-size: 12.5px; color: #1a1a2e; line-height: 1.3; letter-spacing: -0.4px; font-weight: 600; }
         .rc-off { font-size: 13px; font-weight: 800; color: #00915a; line-height: 1.5; }
         .rc-memo-mark { font-size: 9.5px; font-weight: 800; color: #d0700a; background: #fff2df; border-radius: 4px; margin-top: 1px; line-height: 1.4; }
+        .rcd-imgs { justify-content: center; margin: 8px 0 2px; }
+        .rcd-imgs img { width: 60px; height: 60px; border: 1px solid #d8d8e0; }
         .rescal-grid .cal-day.nodata { opacity: 0.3; }
         /* 今日の枠を太くする分、内側の余白を1px減らして日付の位置がズレないようにする */
         .rescal-grid .cal-day.today { border-color: #ff8c00; border-width: 2px; padding: 3px 0; }
@@ -2847,9 +2849,11 @@
                         body=`<div class="rc-dial">${r.dial}</div>`;
                         if(t2) body+=`<div class="rc-t">${t2.s}</div><div class="rc-t">${t2.e}${t2.split||r.matches.length>1?'※':''}</div>`;
                     }
-                    // その日にメモ（日付メモ or その日のダイヤ番号のメモ）があれば印を付ける
-                    if(getDateMemo(iso) || (r.dial && getDialMemo(r.dial))){
-                        body+=`<div class="rc-memo-mark">●メモ</div>`;
+                    // その日にメモや画像（日付 or その日のダイヤ番号）があれば印を付ける
+                    const hasTxt = getDateMemo(iso) || (r.dial && getDialMemo(r.dial));
+                    const hasImg = getDateImgs(iso).length || (r.dial && getDialImgs(r.dial).length);
+                    if(hasTxt || hasImg){
+                        body+=`<div class="rc-memo-mark">${hasTxt?'●メモ':''}${hasImg?'📷':''}</div>`;
                     }
                 }
                 html+=`<div class="${cls}"${r?` onclick="openRcDetail('${iso}')"`:''}><div class="rc-date">${d}</div><div class="rc-body">${body}</div></div>`;
@@ -2886,8 +2890,11 @@
                 });
             }
             const dm=getDateMemo(iso), dlm=getDialMemo(r.dial);
+            const dimg=getDateImgs(iso), limg=getDialImgs(r.dial);
             if(dm) html+=`<div class="rcd-note">📝 ${escapeHtml(dm)}</div>`;
+            if(dimg.length) html+=`<div class="mimg-view rcd-imgs">${dimg.map((s,i)=>`<img src="${s}" onclick="openImgViewerSrc('${iso}','date',${i})">`).join('')}</div>`;
             if(dlm) html+=`<div class="rcd-note">🔖 ${r.dial}番: ${escapeHtml(dlm)}</div>`;
+            if(limg.length) html+=`<div class="mimg-view rcd-imgs">${limg.map((s,i)=>`<img src="${s}" onclick="openImgViewerSrc('${r.dial}','dial',${i})">`).join('')}</div>`;
             html+='<button class="rcd-close" onclick="closeRcDetail()">閉じる</button>';
             document.getElementById('rcDetailBox').innerHTML=html;
             document.getElementById('rcDetail').classList.add('active');
