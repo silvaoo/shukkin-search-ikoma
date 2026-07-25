@@ -2420,7 +2420,8 @@
               <button class="memo-act memo-save" onclick="saveMemoItem('${type}','${key}')">💾 保存</button>
               <button class="memo-act memo-close" onclick="renderMemoList()">✕ 取消</button>
             </div>`;
-          box.querySelector('.ml-text').style.display='none';
+          const txt=box.querySelector('.ml-text');
+          if(txt) txt.style.display='none';     // 画像だけのメモには本文が無いので確認してから隠す
           box.appendChild(ed);
           document.getElementById(`ml-in-${type}-${key}`).focus();
         }
