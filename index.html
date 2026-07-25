@@ -293,6 +293,11 @@
           background: rgba(0,230,118,0.16); color: var(--accent-yellow);
           border: 1px solid rgba(0,230,118,0.55);
         }
+        .act-more {
+          background: rgba(0,210,211,0.16); color: var(--accent-cyan);
+          border: 1px solid rgba(0,210,211,0.6);
+        }
+        .act-more:active { background: rgba(0,210,211,0.85); color: #002; }
         .act-cal:active { background: rgba(0,230,118,0.85); color: #002; }
         /* 画面の縦を目一杯使って、マスと文字を大きくする */
         .rescal-grid .cal-day {
@@ -1115,8 +1120,8 @@
     <div class="card">
         <div class="card-title">クイック検索</div>
         <div class="quick-buttons">
+            <button class="quick-btn" onclick="setQuickPeriod(1,1)">明日</button>
             <button class="quick-btn" onclick="setQuickPeriod(7)">1週間</button>
-            <button class="quick-btn" onclick="setQuickPeriod(14)">2週間</button>
             <button class="quick-btn" onclick="setQuickPeriod(30)">1ヶ月</button>
         </div>
     </div>
@@ -2649,6 +2654,11 @@
           boomSound();                       // バーン！
           if(navigator.vibrate)navigator.vibrate([60,40,90]);
           launchFireworks();
+          // 指定した期間の長さを「続けて検索」の基準にする
+          try{
+            const _sd=new Date(_selStart+'T00:00:00'), _ed=new Date(_selEnd+'T00:00:00');
+            _lastPeriodDays=Math.max(Math.round((_ed-_sd)/86400000)+1,1);
+          }catch(e){ _lastPeriodDays=null; }
           searchRange();                     // 既存の期間検索を実行する
           autoScrollResults();               // 上から下まで自動で流す
         }
@@ -3019,8 +3029,8 @@
                 html += buildDayCardHtml(r.dial, r.dateLabel, r.dayType, r.isHol, r.isBon, r.matches, memoBlockHtml(r.iso, r.dial));
             });
             html += `<div class="action-row">
+                <button class="act-btn act-more" onclick="continueSearch()">➕ 続けて検索</button>
                 <button class="act-btn act-cal" onclick="openResultCal()">📅 カレンダーを見る</button>
-                <button class="act-btn act-tts" onclick="speakRangeResults()">🔊 読み上げ</button>
             </div>`;
 
             container.innerHTML = html;
@@ -3088,21 +3098,41 @@
             return `${y}-${m}-${day}`;
         }
 
-        function setQuickPeriod(days) {
-            const today = new Date();
-            document.getElementById('start-date').value = toLocalISO(today);
-            _selStart = toLocalISO(today);
-            if(days === 0) {
-                document.getElementById('end-date').value = toLocalISO(today);
-            } else {
-                const endDate = new Date();
-                endDate.setDate(today.getDate() + days - 1);
-                document.getElementById('end-date').value = toLocalISO(endDate);
-            }
-            _selEnd = document.getElementById('end-date').value;   // カレンダー側にも反映
+        /* 続けて検索で伸ばす幅(日数)。クイック検索や指定検索のたびに更新する */
+        let _lastPeriodDays = null;
+        function setQuickPeriod(days, startOffset) {
+            const off = startOffset || 0;              // 0=今日から、1=明日から
+            const span = Math.max(days, 1);
+            const start = new Date();
+            start.setDate(start.getDate() + off);
+            const end = new Date(start);
+            end.setDate(start.getDate() + span - 1);
+            document.getElementById('start-date').value = toLocalISO(start);
+            document.getElementById('end-date').value = toLocalISO(end);
+            _selStart = toLocalISO(start);
+            _selEnd = toLocalISO(end);                 // カレンダー側にも反映
+            _lastPeriodDays = span;                    // 続けて検索はこの幅ずつ伸ばす
             updateRangeLabel();
             searchRange();
-            autoScrollResults();   // 結果の一番下(カレンダーで見るボタン)まで自動で流す
+            autoScrollResults();   // 結果の一番下(ボタン)まで自動で流す
+        }
+        /* 表示中の期間を、同じ幅だけ後ろに伸ばして検索し直す */
+        function continueSearch() {
+            const s = document.getElementById('start-date').value;
+            const e = document.getElementById('end-date').value;
+            if(!s || !e){ showToast('先に検索してください'); return; }
+            const sd = new Date(s + 'T00:00:00'), ed = new Date(e + 'T00:00:00');
+            const span = Math.round((ed - sd) / 86400000) + 1;
+            const unit = _lastPeriodDays || span;      // 最初に検索した幅を引き継ぐ
+            const ne = new Date(ed);
+            ne.setDate(ed.getDate() + unit);
+            document.getElementById('end-date').value = toLocalISO(ne);
+            _selEnd = toLocalISO(ne);
+            _lastPeriodDays = unit;
+            updateRangeLabel();
+            searchRange();
+            autoScrollResults();
+            showToast('📅 ' + unit + '日分を追加しました');
         }
 
         /* 指定日付のNヶ月後を計算する(月末をまたぐ場合は月末に丸める) */
