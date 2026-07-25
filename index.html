@@ -2415,7 +2415,19 @@
           const cur=(type==='date'?loadMemos(MEMO_DATE_KEY):loadMemos(MEMO_DIAL_KEY))[key]||'';
           const ed=document.createElement('div');
           ed.className='ml-edit';
+          const imgs=(type==='date'?getDateImgs(key):getDialImgs(key));
+          const imgHtml = imgs.length
+            ? `<div class="mimg-list" id="mlimg-${type}-${key}">${imgs.map((src,i)=>
+                `<div class="mimg-item">
+                   <img src="${src}" onclick="openImgViewerSrc('${key}','${type}',${i})">
+                   <button class="mimg-del" onclick="deleteMemoListImage('${type}','${key}',${i})">✕</button>
+                 </div>`).join('')}</div>`
+            : '';
           ed.innerHTML=`<textarea rows="3" id="ml-in-${type}-${key}">${escapeHtml(cur)}</textarea>
+            ${imgHtml}
+            <label class="mimg-add">📷 画像を追加
+              <input type="file" accept="image/*" multiple onchange="addMemoListImages('${type}','${key}',this)">
+            </label>
             <div class="ml-edit-acts">
               <button class="memo-act memo-save" onclick="saveMemoItem('${type}','${key}')">💾 保存</button>
               <button class="memo-act memo-close" onclick="renderMemoList()">✕ 取消</button>
@@ -2424,6 +2436,42 @@
           if(txt) txt.style.display='none';     // 画像だけのメモには本文が無いので確認してから隠す
           box.appendChild(ed);
           document.getElementById(`ml-in-${type}-${key}`).focus();
+        }
+        /* メモ一覧の編集欄から画像を削除する */
+        function deleteMemoListImage(type,key,idx){
+          if(!confirm('この画像を削除しますか？')) return;
+          const store=type==='date'?MEMOIMG_DATE_KEY:MEMOIMG_DIAL_KEY;
+          const obj=loadImgs(store);
+          const list=(obj[key]||[]).slice();
+          list.splice(idx,1);
+          if(list.length) obj[key]=list; else delete obj[key];
+          if(saveImgs(store,obj)){
+            showToast('🗑 画像を削除しました');
+            renderMemoList();
+            refreshMemoViews();
+            editMemoItem(type,key);      // 編集欄を開き直す
+          }
+        }
+        /* メモ一覧の編集欄から画像を追加する */
+        async function addMemoListImages(type,key,input){
+          const files=[...(input.files||[])];
+          if(!files.length) return;
+          showToast('画像を読み込んでいます…');
+          const store=type==='date'?MEMOIMG_DATE_KEY:MEMOIMG_DIAL_KEY;
+          const obj=loadImgs(store);
+          const list=(obj[key]||[]).slice();
+          for(const f of files){
+            if(!/^image\//.test(f.type)) continue;
+            try{ list.push(await shrinkImage(f)); }catch(e){}
+          }
+          obj[key]=list;
+          if(saveImgs(store,obj)){
+            showToast('📷 画像を追加しました');
+            renderMemoList();
+            refreshMemoViews();
+            editMemoItem(type,key);
+          }
+          input.value='';
         }
         function saveMemoItem(type,key){
           const v=document.getElementById(`ml-in-${type}-${key}`).value.trim();
