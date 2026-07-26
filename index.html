@@ -506,10 +506,10 @@
             box-shadow: 0 0 0 1px var(--border-color);
         }
 
+        /* 未入力時のヒント文字は、実際の入力値と区別できるよう薄いグレーにする(学園前Aと統一) */
         input[type="number"]::placeholder {
-            color: var(--ph-gray);
-            font-weight: normal;
-            opacity: 0.6;
+            color: #9a9ab0;
+            opacity: 0.2;
         }
 
         input[type="date"] {
