@@ -21,6 +21,7 @@
     <style>
         /* ===== ダークモード(既定)のカラー変数 ===== */
         :root {
+            --ph-gray: #a0a0ab;
             --bg-color: #121214;
             --card-bg: #1c1c1f;
             --accent-yellow: #ffd43b;
@@ -39,6 +40,7 @@
 
         /* ===== ライトモードのカラー変数(bodyにlightクラスが付くと切り替わる) ===== */
         body.light {
+            --ph-gray: #6b6b75;
             --bg-color: #f4f5f7;
             --card-bg: #ffffff;
             --accent-yellow: #d1a300;
@@ -505,7 +507,7 @@
         }
 
         input[type="number"]::placeholder {
-            color: var(--muted-text);
+            color: var(--ph-gray);
             font-weight: normal;
             opacity: 0.6;
         }
