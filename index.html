@@ -26,7 +26,9 @@
             --accent-yellow: #ffd43b;
             --accent-cyan: #00d2d3;
             --text-color: #e0e0e6;
-            --muted-text: #a0a0ab;
+            --label: #BA68C8;
+            --note: #CE93D8;
+            --muted-text: var(--label);
             --btn-green: linear-gradient(135deg, #10ac84, #1dd1a1);
             --btn-purple: linear-gradient(135deg, #5f27cd, #341f97);
             --border-color: #2a2a30;
@@ -42,7 +44,9 @@
             --accent-yellow: #d1a300;
             --accent-cyan: #0097a7;
             --text-color: #202024;
-            --muted-text: #6b6b75;
+            --label: #8E24AA;
+            --note: #6A1B9A;
+            --muted-text: var(--label);
             --border-color: #dcdce2;
             --input-bg: #ffffff;
             --list-bg: #f0f1f4;
@@ -237,11 +241,11 @@
         .cal-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
         .cal-title { font-size: 14px; font-weight: 800; color: #1a1a2e; }
         .cal-x {
-          background: #f0f0f5; border: 1px solid #d8d8e0; color: #55556a;
+          background: #f0f0f5; border: 1px solid #d8d8e0; color: var(--label);
           border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 800; cursor: pointer;
         }
         .cal-hint {
-          font-size: 10.5px; color: #6a6a80; text-align: center; margin-bottom: 10px;
+          font-size: 10.5px; color: var(--note); text-align: center; margin-bottom: 10px;
           line-height: 1.5;
         }
         .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -253,7 +257,7 @@
 
         /* minmax(0,1fr) にしないと中身の最小幅で列が広がり、横にはみ出してしまう */
         .cal-dw { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 2px; margin-bottom: 2px; }
-        .cal-dw div { text-align: center; font-size: 11px; font-weight: 700; color: #6a6a80; padding: 3px 0; }
+        .cal-dw div { text-align: center; font-size: 11px; font-weight: 700; color: var(--label); padding: 3px 0; }
         .cal-dw .sun { color: #d92626; }
         .cal-dw .sat { color: #2660d9; }
 
@@ -283,7 +287,7 @@
         .cal-btn {
           flex: 1; padding: 12px 4px; border-radius: 8px; font-size: 12.5px;
           font-weight: 800; cursor: pointer; border: 1px solid #d8d8e0;
-          background: #f0f0f5; color: #55556a;
+          background: #f0f0f5; color: var(--label);
         }
         .cal-ok { background: var(--accent-yellow); color: #332b00; border-color: var(--accent-yellow); flex: 1.3; }
         .cal-ok:disabled { opacity: 0.35; cursor: default; }
@@ -338,7 +342,7 @@
         }
         .ml-cal-btn:active { filter: brightness(0.92); }
         .rescal-legend {
-          margin-top: 8px; font-size: 10.5px; color: #6a6a80;
+          margin-top: 8px; font-size: 10.5px; color: var(--note);
           text-align: center; line-height: 1.6;
         }
         .rc-legend-off { color: #00915a; font-weight: 700; }
@@ -364,12 +368,12 @@
         .rcd-badge.dosun { background: #ffe9e9; color: #d92626; }
         .rcd-badge.bon { background: #fff3d6; color: #a86800; }
         .rcd-dial { font-size: 34px; font-weight: 800; color: #e07000; line-height: 1.2; margin-bottom: 10px; }
-        .rcd-dial span { font-size: 15px; color: #6a6a80; font-weight: 700; }
+        .rcd-dial span { font-size: 15px; color: var(--label); font-weight: 700; }
         .rcd-row {
           display: flex; justify-content: space-between; align-items: center;
           padding: 10px 0; border-top: 1px solid #eaeaf0; font-size: 15px;
         }
-        .rcd-row .lbl { color: #6a6a80; font-size: 13px; font-weight: 700; }
+        .rcd-row .lbl { color: var(--label); font-size: 13px; font-weight: 700; }
         .rcd-row .val { font-weight: 800; font-size: 17px; }
         .rcd-note {
           margin-top: 10px; padding: 10px; background: #fff6e5; border-radius: 8px;
@@ -1035,7 +1039,7 @@
   padding: 11px 12px; margin-bottom: 14px;
   font-size: 12.5px; font-weight: 800; color: var(--accent-yellow); line-height: 1.6;
 }
-.guide-banner span { display: block; font-size: 10.5px; font-weight: 600; color: var(--muted-text); margin-top: 3px; }
+.guide-banner span { display: block; font-size: 10.5px; font-weight: 600; color: var(--note); margin-top: 3px; }
 .guide-quick {
   background: var(--input-bg); border: 1px solid var(--accent-yellow); border-radius: 10px;
   padding: 12px 14px; margin-bottom: 6px;
