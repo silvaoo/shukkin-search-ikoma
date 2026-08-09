@@ -2078,7 +2078,7 @@
         }
 
         /* 通知を受け取る / 止める を切り替える */
-        async function toggleNotify(){
+        async function toggleShukkinNotify(){
           if(getNotifyOn()){
             try{ localStorage.setItem(NOTIFY_ON_KEY, '0'); }catch(e){}
             await removeSettingsFromServer();          // サーバー側の登録も消す
@@ -2138,7 +2138,7 @@
              + '</div>';
 
           // 切り替えボタン
-          h += '<button class="nt-btn ' + (on ? 'stop' : 'go') + '" onclick="toggleNotify()">'
+          h += '<button class="nt-btn ' + (on ? 'stop' : 'go') + '" onclick="toggleShukkinNotify()">'
              + (on ? '通知を止める' : '通知を受け取る')
              + '</button>';
 
