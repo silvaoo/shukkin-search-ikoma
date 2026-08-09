@@ -2287,6 +2287,22 @@
               || window.navigator.standalone === true;
         }
 
+        /* 以前、置き場所を指定せずに登録してしまった通知用ワーカーを片付ける。
+           本体と同じ区画に居座っていると、更新の帯が出続ける原因になる。 */
+        async function cleanupWrongPushWorker(){
+          try{
+            const appScope = new URL('./', location.href).href;
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for(const r of regs){
+              if(r.scope !== appScope) continue;
+              const w = r.active || r.waiting || r.installing;
+              if(w && w.scriptURL && w.scriptURL.indexOf('firebase-messaging-sw.js') >= 0){
+                await r.unregister();
+              }
+            }
+          }catch(e){ /* 片付けに失敗しても、登録自体は続行する */ }
+        }
+
         async function setupPush(){
           if(!('Notification' in window) || !('serviceWorker' in navigator)){
             showToast('この端末は通知に対応していません');
@@ -2316,7 +2332,16 @@
 
           try{
             showToast('準備しています…');
-            const swReg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+            // 【置き場所を分けるのが重要】
+    // 場所を指定せずに登録すると、本体の sw.js と同じ区画に入ってしまい、
+    // 互いを上書きし合う。その結果「新しいバージョンがあります」の帯が
+    // 何度も出たり、通知が正しく表示されなくなる。
+    // 通知用は専用の区画に置いて、本体と衝突しないようにする。
+    await cleanupWrongPushWorker();
+    const swReg = await navigator.serviceWorker.register(
+      'firebase-messaging-sw.js',
+      { scope: './firebase-cloud-messaging-push-scope' }
+    );
             if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
             const messaging = firebase.messaging();
 
