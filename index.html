@@ -1284,7 +1284,7 @@
         <!-- 出勤通知の設定。大事な機能なので、目につきやすい位置に置く -->
         <button class="notify-setting-btn" onclick="openNotifySettings()">🔔 通知設定</button>
 
-        <button class="btn btn-speak" onclick="speakToday()">🔊 今日の勤務を読み上げ</button>
+        <button class="btn btn-speak" id="speakTodayBtn" onclick="speakToday()">🔊 今日の勤務を読み上げ</button>
     </div>
 
     <!-- お知らせバナー(タップで破裂→中身を表示。×で閉じる)
@@ -3570,10 +3570,43 @@
             resultEl.innerHTML = buildDayCardHtml(num, `本日 ${getTodayString()}`, currentDayType, isHol, isBon, matches);
         }
 
+        /* 読み上げ中はボタンを「停止する」に変える。
+           終わったら元に戻す。押した本人が今どちらの状態か分かるようにするため。 */
+        let _speakBtnEl = null;
+        function markSpeaking(btnId){
+          const b = document.getElementById(btnId);
+          _speakBtnEl = b;
+          if(b){
+            if(!b.dataset.orig) b.dataset.orig = b.textContent;
+            b.textContent = '\u23f9 読み上げを停止';
+          }
+        }
+        function markSpeakEnd(){
+          const b = _speakBtnEl;
+          _speakBtnEl = null;
+          if(b && b.dataset.orig) b.textContent = b.dataset.orig;
+        }
+        /* 読み上げを頼むときは必ずこれを通す。終了・中断のどちらでも元に戻る */
+        function speakWithButton(uttr, btnId){
+          uttr.onend = markSpeakEnd;
+          uttr.onerror = function(e){
+            // 停止ボタンを押したときも仕組み上はエラー扱いになる。
+            // それは異常ではないので、本当に読めなかったときだけ知らせる。
+            const kind = e && e.error;
+            if(kind && kind !== 'interrupted' && kind !== 'canceled'){
+              showToast('読み上げできませんでした（' + kind + '）');
+            }
+            markSpeakEnd();
+          };
+          markSpeaking(btnId);
+          window.speechSynthesis.speak(uttr);
+        }
+
         function speakToday() {
             // 読み上げ中なら停止して終了(トグル動作)
             if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
                 window.speechSynthesis.cancel();
+                markSpeakEnd();          // ボタンの表示も元に戻す
                 return;
             }
 
@@ -3603,7 +3636,7 @@
 
             const uttr = new SpeechSynthesisUtterance(speechText);
             uttr.lang = 'ja-JP';
-            window.speechSynthesis.speak(uttr);
+            speakWithButton(uttr, 'speakTodayBtn');
         }
 
         /* 期間検索結果を保持し、コピー・読み上げボタンから参照できるようにする */
@@ -3706,6 +3739,7 @@
             // 読み上げ中なら停止して終了(トグル動作)
             if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
                 window.speechSynthesis.cancel();
+                markSpeakEnd();          // ボタンの表示も元に戻す
                 return;
             }
             const rows = window._lastRangeRows;
