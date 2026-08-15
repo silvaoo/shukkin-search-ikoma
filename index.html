@@ -1724,28 +1724,28 @@
         /* お盆特例: 2026年8月13日〜15日は「お盆休みで土曜ダイヤ」扱い(BAダイヤと同じ運用) */
         let BON_SPECIAL_DATES = [];   // 中身は dia-ikoma.json から入れる
 
-        function toDateKey(dateObj) {
+        function toISO(dateObj) {
             const y = dateObj.getFullYear();
             const m = String(dateObj.getMonth() + 1).padStart(2, "0");
             const d = String(dateObj.getDate()).padStart(2, "0");
             return `${y}-${m}-${d}`;
         }
 
-        function isHoliday(dateObj) {
-            return HOLIDAYS.has(toDateKey(dateObj));
+        function isObon(dateObj) {
+            return BON_SPECIAL_DATES.includes(toISO(dateObj));
         }
 
-        function isBonSpecial(dateObj) {
-            return BON_SPECIAL_DATES.includes(toDateKey(dateObj));
+        /* その日が祝日かどうか判定する */
+        function isHol(dateObj) {
+            return HOLIDAYS.has(toISO(dateObj));
         }
 
         // お盆特例・祝日を考慮した曜日区分の判定
-        // 優先順位: お盆特例(土曜扱い) > 祝日(日曜扱い) > 通常の曜日
-        function getDayType(dateObj) {
-            if (isBonSpecial(dateObj)) return "土";
-            if (isHoliday(dateObj)) return "日";
+        function dayType(dateObj) {
+            if (isObon(dateObj)) return "土"; // お盆休み中は土曜ダイヤ扱い
             const day = dateObj.getDay();
-            if (day === 0) return "日";
+            // 日曜だけでなく「平日に当たる祝日」も日祝ダイヤにする
+            if (day === 0 || isHol(dateObj)) return "日祝";
             if (day === 6) return "土";
             return "平";
         }
@@ -2000,7 +2000,7 @@
         /* =========================================================
            1日分のday-cardを組み立てる(学園前ダイヤ版と同じ「day-card」仕様)
            dial: ダイヤ番号 / dateLabel: 表示用日付 / dayType: 平・土・日
-           isHol: 祝日フラグ / isBon: お盆特例フラグ / matches: findDataの結果
+           hol: 祝日フラグ / isBon: お盆特例フラグ / matches: findDataの結果
            ========================================================= */
         /* ==== メモ機能 ====
            ・日付メモ  : その日1日だけに紐づくメモ（例: 年休申請済み）
@@ -2244,7 +2244,7 @@
             return `前半、${s[0]}から${s[1]}。後半、${e[0]}から${e[1]}。労働時間は前半${w[0]||''}、後半${w[1]||''}です。`;
         }
 
-        function buildDayCardHtml(dial, dateLabel, dayType, isHol, isBon, matches, memoHtml) {
+        function buildDayCardHtml(dial, dateLabel, dayType, hol, isBon, matches, memoHtml) {
             let dateClass = 'day-date';
             let badgeClass = 'day-badge badge-week';
             let badgeText = '平日';
@@ -2253,10 +2253,10 @@
                 badgeClass = 'day-badge badge-sat';
                 badgeText = isBon ? 'お盆休みで土曜ダイヤ' : '土曜';
             }
-            if (dayType === '日') {
+            if (dayType === '日祝') {
                 dateClass += ' holiday';
                 badgeClass = 'day-badge badge-hday';
-                badgeText = isHol ? '祝日' : '日曜';
+                badgeText = hol ? '祝日' : '日曜';
             }
 
             const isOff = matches.length === 0 || matches[0].start === '公休' || matches[0].dayType === '全';
@@ -2330,7 +2330,7 @@
             const inp = document.getElementById('daiya-number');
             const v = inp ? parseInt(inp.value) : NaN;
             if (!(v >= 1 && v <= 59)) { el.style.display = 'none'; return; }
-            const list = findData(v, getDayType(new Date()));
+            const list = findData(v, dayType(new Date()));
             // 条件違いで複数パターンある日は、どれになるか確定できないので表示しない(誤案内を避ける)
             if (!list || list.length !== 1) { el.style.display = 'none'; return; }
             const st = cdToMin(list[0].start), en = cdToMin(list[0].end);
@@ -2359,12 +2359,12 @@
             updateCountdown(); // A案: カウントダウンも毎秒更新
 
             // 日付が変わったら今日の勤務表示も作り直す
-            const key=toLocalISO(n);
+            const key=toISO(n);
             if(window._clockDay && window._clockDay!==key){
                 restoreMyDial();   // 日付が変わったら番号も1つ進める
                 searchToday();
                 const sd=document.getElementById('start-date');
-                if(sd && sd.value===window._clockDay) sd.value=toLocalISO(new Date());
+                if(sd && sd.value===window._clockDay) sd.value=toISO(new Date());
             }
             window._clockDay=key;
         }
@@ -2540,7 +2540,7 @@
         }
         function renderMemoList(){
           const t=new Date();t.setHours(0,0,0,0);
-          const todayIso=toLocalISO(t);
+          const todayIso=toISO(t);
 
           // --- 日付のメモ（日付順。過ぎた日は薄く表示する） ---
           const dm=loadMemos(MEMO_DATE_KEY);
@@ -2718,7 +2718,7 @@
         /* 過ぎた日のメモをまとめて片付ける */
         function cleanPastMemos(){
           const t=new Date();t.setHours(0,0,0,0);
-          const todayIso=toLocalISO(t);
+          const todayIso=toISO(t);
           const obj=loadMemos(MEMO_DATE_KEY);
           const past=Object.keys(obj).filter(k=>k<todayIso);
           if(past.length===0)return;
@@ -2762,7 +2762,7 @@
           if(!dial||dial<1||dial>59){showToast('先に今日のダイヤ番号を入力してください');return;}
           const t=new Date();t.setHours(0,0,0,0);
           // デフォルトは今日
-          if(!_selStart){ _selStart=toLocalISO(t); _selEnd=toLocalISO(t); }
+          if(!_selStart){ _selStart=toISO(t); _selEnd=toISO(t); }
           _calView=new Date(_selStart+'T00:00:00');
           renderCal();
           attachCalSwipe(document.getElementById('calGrid'), calMove);   // 横スワイプで月移動
@@ -2780,7 +2780,7 @@
         function calToday(){
           const t=new Date();t.setHours(0,0,0,0);
           _calView=new Date(t);
-          _selStart=toLocalISO(t); _selEnd=toLocalISO(t);
+          _selStart=toISO(t); _selEnd=toISO(t);
           renderCal();
         }
         function calClear(){
@@ -2807,12 +2807,12 @@
           const first=new Date(y,m,1);
           const days=new Date(y,m+1,0).getDate();
           const t=new Date();t.setHours(0,0,0,0);
-          const todayIso=toLocalISO(t);
+          const todayIso=toISO(t);
           let html='';
           for(let i=0;i<first.getDay();i++) html+='<div class="cal-day empty"></div>';
           for(let d=1;d<=days;d++){
             const dt=new Date(y,m,d);
-            const iso=toLocalISO(dt);
+            const iso=toISO(dt);
             const dw=dt.getDay();
             let cls='cal-day';
             if(dw===0)cls+=' sun'; if(dw===6)cls+=' sat';
@@ -2945,7 +2945,7 @@
           const v=parseInt(document.getElementById('daiya-number').value);
           if(!v||v<1||v>59)return;
           try{
-            localStorage.setItem(MYDIAL_KEY, JSON.stringify({dial:v, iso:toLocalISO(new Date())}));
+            localStorage.setItem(MYDIAL_KEY, JSON.stringify({dial:v, iso:toISO(new Date())}));
           }catch(e){}
           showMyDialNote(true);
         }
@@ -2960,7 +2960,7 @@
           const d=((o.dial-1+diff)%59+59)%59+1;   // 1日ごとに1つ進む(1〜10を繰り返す)
           const el=document.getElementById('daiya-number');
           el.value=d;
-          try{ localStorage.setItem(MYDIAL_KEY, JSON.stringify({dial:d, iso:toLocalISO(t)})); }catch(e){}
+          try{ localStorage.setItem(MYDIAL_KEY, JSON.stringify({dial:d, iso:toISO(t)})); }catch(e){}
           showMyDialNote(true);
           return true;
         }
@@ -3045,19 +3045,19 @@
             const first=new Date(y,m-1,1);
             const days=new Date(y,m,0).getDate();
             const t=new Date();t.setHours(0,0,0,0);
-            const todayIso=toLocalISO(t);
+            const todayIso=toISO(t);
 
             let html='';
             for(let i=0;i<first.getDay();i++) html+='<div class="cal-day empty"></div>';
             for(let d=1;d<=days;d++){
                 const dt=new Date(y,m-1,d);
-                const iso=toLocalISO(dt);
+                const iso=toISO(dt);
                 const r=byIso[iso];
                 const dw=dt.getDay();
                 let cls='cal-day';
                 if(dw===0)cls+=' sun'; if(dw===6)cls+=' sat';
                 if(iso===todayIso)cls+=' today';
-                if(r&&(r.isHol||r.isBon||r.bon))cls+=' hol';
+                if(r&&(r.hol||r.isBon||r.bon))cls+=' hol';
                 if(!r)cls+=' nodata';
 
                 let body='';
@@ -3092,7 +3092,7 @@
             const DWJ=['日','月','火','水','木','金','土'];
             let badge='', bcls='hei';
             if(r.isBon||r.bon){ badge='お盆(土曜ダイヤ)'; bcls='bon'; }
-            else if(r.isHol){ badge='祝日'; bcls='dosun'; }
+            else if(r.hol){ badge='祝日'; bcls='dosun'; }
             else if(r.dayType==='土'){ badge='土曜'; bcls='dosun'; }
             else if(r.dayType==='日'||r.dayType==='日祝'){ badge='日祝'; bcls='dosun'; }
             else { badge='平日'; bcls='hei'; }
@@ -3136,9 +3136,9 @@
                 return;
             }
 
-            const isHol = isHoliday(now);
-            const isBon = isBonSpecial(now);
-            const currentDayType = getDayType(now);
+            const hol = isHol(now);
+            const isBon = isObon(now);
+            const currentDayType = dayType(now);
             const matches = findData(num, currentDayType);
 
             if (matches.length === 0) {
@@ -3146,7 +3146,7 @@
                 return;
             }
 
-            resultEl.innerHTML = buildDayCardHtml(num, `本日 ${getTodayString()}`, currentDayType, isHol, isBon, matches);
+            resultEl.innerHTML = buildDayCardHtml(num, `本日 ${getTodayString()}`, currentDayType, hol, isBon, matches);
         }
 
         /* 読み上げ中はボタンを「停止する」に変える。
@@ -3193,16 +3193,16 @@
             if (isNaN(num) || num < 1 || num > 59) return;
 
             const now = new Date();
-            const isHol = isHoliday(now);
-            const isBon = isBonSpecial(now);
-            const currentDayType = getDayType(now);
+            const hol = isHol(now);
+            const isBon = isObon(now);
+            const currentDayType = dayType(now);
             const matches = findData(num, currentDayType);
 
             if (matches.length === 0) return;
 
             let speechText = `生駒ダイヤ、${num}番。`;
             if (isBon) speechText += "本日はお盆休み期間のため、土曜ダイヤで運行します。";
-            else if (isHol) speechText += "本日は祝日のため、日曜ダイヤで運行します。";
+            else if (hol) speechText += "本日は祝日のため、日曜ダイヤで運行します。";
             matches.forEach((m, idx) => {
                 if(matches.length > 1) speechText += `パターン${idx + 1}。`;
                 if (m.start === "公休" || m.dayType === "全") {
@@ -3243,13 +3243,13 @@
             const rows = [];
 
             while (start <= end) {
-                const isHol = isHoliday(start);
-                const isBon = isBonSpecial(start);
-                const currentDayType = getDayType(start);
+                const hol = isHol(start);
+                const isBon = isObon(start);
+                const currentDayType = dayType(start);
                 const rotatedDial = calcDial(start, num);
                 const matches = findData(rotatedDial, currentDayType);
                 const dateLabel = `${start.getMonth()+1}/${start.getDate()}（${daysOfWeek[start.getDay()]}）`;
-                rows.push({ iso: toLocalISO(start), dateLabel, dayType: currentDayType, isHol, isBon, matches, dial: rotatedDial });
+                rows.push({ iso: toISO(start), dateLabel, dayType: currentDayType, hol, isBon, matches, dial: rotatedDial });
                 start.setDate(start.getDate() + 1);
             }
 
@@ -3274,7 +3274,7 @@
             let html = `<div class="res-summary">${rows.length}日間 ／ 勤務${workCnt}日 ／ 公休${offCnt}日</div>`;
             rows.forEach((r, idx) => {
                 // B案: 1枚ずつ順に現れるよう、カードごとに表示開始を少しずつ遅らせる
-                const card = buildDayCardHtml(r.dial, r.dateLabel, r.dayType, r.isHol, r.isBon, r.matches, memoBlockHtml(r.iso, r.dial));
+                const card = buildDayCardHtml(r.dial, r.dateLabel, r.dayType, r.hol, r.isBon, r.matches, memoBlockHtml(r.iso, r.dial));
                 html += card;
             });
             // C案: 合計労働時間は自動スクロールが止まる「結果の一番下」に出す
@@ -3328,7 +3328,7 @@
                 const isOff = r.matches.length === 0 || r.matches[0].start === '公休' || r.matches[0].dayType === '全';
                 text += `${r.dateLabel}、${r.dial}番。`;
                 if (r.isBon) text += 'お盆休みで土曜ダイヤ。';
-                else if (r.isHol) text += '祝日のため日曜ダイヤ。';
+                else if (r.hol) text += '祝日のため日曜ダイヤ。';
                 if (isOff) {
                     text += '公休。';
                 } else {
@@ -3345,12 +3345,6 @@
 
         /* 日付をローカル時刻(端末のタイムゾーン)基準でYYYY-MM-DD文字列に変換する。
            toISOString()はUTC基準のため、日本時間の深夜〜早朝だと前日の日付になってしまう不具合があった。 */
-        function toLocalISO(d) {
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`;
-        }
 
         /* 続けて検索で伸ばす幅(日数)。クイック検索や指定検索のたびに更新する */
         let _lastPeriodDays = null;
@@ -3361,10 +3355,10 @@
             start.setDate(start.getDate() + off);
             const end = new Date(start);
             end.setDate(start.getDate() + span - 1);
-            document.getElementById('start-date').value = toLocalISO(start);
-            document.getElementById('end-date').value = toLocalISO(end);
-            _selStart = toLocalISO(start);
-            _selEnd = toLocalISO(end);                 // カレンダー側にも反映
+            document.getElementById('start-date').value = toISO(start);
+            document.getElementById('end-date').value = toISO(end);
+            _selStart = toISO(start);
+            _selEnd = toISO(end);                 // カレンダー側にも反映
             _lastPeriodDays = span;                    // 続けて検索はこの幅ずつ伸ばす
             updateRangeLabel();
             searchRange();
@@ -3380,8 +3374,8 @@
             const unit = _lastPeriodDays || span;      // 最初に検索した幅を引き継ぐ
             const ne = new Date(ed);
             ne.setDate(ed.getDate() + unit);
-            document.getElementById('end-date').value = toLocalISO(ne);
-            _selEnd = toLocalISO(ne);
+            document.getElementById('end-date').value = toISO(ne);
+            _selEnd = toISO(ne);
             _lastPeriodDays = unit;
             updateRangeLabel();
             searchRange();
@@ -3405,9 +3399,9 @@
             const today = new Date();
             const endDate = addMonths(today, n);
             endDate.setDate(endDate.getDate() - 1);
-            document.getElementById('start-date').value = toLocalISO(today);
-            _selStart = toLocalISO(today);
-            document.getElementById('end-date').value = toLocalISO(endDate);
+            document.getElementById('start-date').value = toISO(today);
+            _selStart = toISO(today);
+            document.getElementById('end-date').value = toISO(endDate);
             searchRange();
         }
 
@@ -3580,7 +3574,7 @@
             document.getElementById('daiya-number').placeholder = calcAutoDial(new Date());
             restoreMyDial();   // 前に入れた番号があれば、今日の番号に進めて自動で入れる
             const _t=new Date(); _t.setHours(0,0,0,0);
-            _selStart=toLocalISO(_t); _selEnd=toLocalISO(_t);   // カレンダーの初期値は今日
+            _selStart=toISO(_t); _selEnd=toISO(_t);   // カレンダーの初期値は今日
             document.getElementById('start-date').value=_selStart;
             document.getElementById('end-date').value=_selEnd;
             updateRangeLabel();
