@@ -877,6 +877,18 @@
           box-shadow: 0 4px 16px rgba(0,0,0,0.4); transform-origin: center;
           /* 最初だけ元気に脈打ち、その後はゆっくり呼吸する(更新バナーと同じ考え方) */
           animation: ub-pulse-strong 0.7s ease-in-out 4, ub-pulse-soft 2.4s ease-in-out 2.8s infinite;
+        
+          /* 他のダイヤと同じ見え方にする。
+             このアプリは全体の文字がやや大きく、余白も広いので、
+             同じ文言でも2行に折り返して背が高く見えていた。
+             1行に収まるよう、文字を少しだけ詰める。 */
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding-left: 12px;
+          padding-right: 38px;
+          letter-spacing: 0;
+          font-size: 13px;
         }
         /* 右上の小さな×(バナーを閉じる)。バナー本体のタップとは別扱いにする */
         #news-close {
