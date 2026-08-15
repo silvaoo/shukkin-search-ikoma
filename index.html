@@ -1681,8 +1681,50 @@
         const DIA_JSON = './dia-ikoma.json';
         const DIA_CACHE_KEY = 'ikoma-dia-cache';
 
+        /* dials形式(番号ごと)のデータを、このアプリが使う行の並びに開く。
+           5つのアプリでデータの形をそろえたため、読み込むときにここで変換する。
+           画面側の作りには手を入れていないので、開いた形は従来どおり。
+
+           形の対応:
+             dials["3"]        → 3番のダイヤ
+             dials["3"]["平"]  → 平日のパターン一覧(配列。複数あれば複数件)
+             null              → 公休(番号ごと、または曜日ごと) */
+        function dialsToRows(dials){
+          const rows = [];
+          Object.keys(dials).forEach(function(id){
+            const num = parseInt(id, 10);
+            const v = dials[id];
+            if(v === null || v === undefined){
+              // 番号ごと公休。曜日を問わないので「全」で1行だけ置く
+              rows.push({ id:num, dayType:'全', start:'公休', memo:'', end:'', workTime:'' });
+              return;
+            }
+            ['平','土','日祝'].forEach(function(dt){
+              if(!(dt in v)) return;              // その曜日の行がもともと無い
+              const list = v[dt];
+              if(list === null){
+                // その曜日だけ公休
+                rows.push({ id:num, dayType:dt, start:'公休', memo:'', end:'', workTime:'' });
+                return;
+              }
+              (Array.isArray(list) ? list : [list]).forEach(function(s){
+                const parts = String(s.o || '').split('〜');
+                rows.push({
+                  id: num, dayType: dt,
+                  start: (parts[0] || '').trim(),
+                  end:   (parts[1] || '').trim(),
+                  workTime: s.w || '',
+                  memo: s.n || ''
+                });
+              });
+            });
+          });
+          return rows;
+        }
+
         function applyDiaData(d){
-          if(Array.isArray(d.rows)) ikomaDaiyaData = d.rows;
+          if(d.dials)              ikomaDaiyaData = dialsToRows(d.dials);
+          else if(Array.isArray(d.rows)) ikomaDaiyaData = d.rows;   // 古い形のデータでも動くようにしておく
           HOLIDAYS = new Set(d.holidays || []);
           BON_SPECIAL_DATES = d.obon || [];
           if(d.meta){
