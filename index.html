@@ -2000,7 +2000,7 @@
         /* =========================================================
            1日分のday-cardを組み立てる(学園前ダイヤ版と同じ「day-card」仕様)
            dial: ダイヤ番号 / dateLabel: 表示用日付 / dayType: 平・土・日
-           hol: 祝日フラグ / isBon: お盆特例フラグ / matches: findDataの結果
+           hol: 祝日フラグ / bon: お盆特例フラグ / matches: findDataの結果
            ========================================================= */
         /* ==== メモ機能 ====
            ・日付メモ  : その日1日だけに紐づくメモ（例: 年休申請済み）
@@ -2244,14 +2244,14 @@
             return `前半、${s[0]}から${s[1]}。後半、${e[0]}から${e[1]}。労働時間は前半${w[0]||''}、後半${w[1]||''}です。`;
         }
 
-        function buildDayCardHtml(dial, dateLabel, dayType, hol, isBon, matches, memoHtml) {
+        function buildDayCardHtml(dial, dateLabel, dayType, hol, bon, matches, memoHtml) {
             let dateClass = 'day-date';
             let badgeClass = 'day-badge badge-week';
             let badgeText = '平日';
             if (dayType === '土') {
                 dateClass += ' saturday';
                 badgeClass = 'day-badge badge-sat';
-                badgeText = isBon ? 'お盆休みで土曜ダイヤ' : '土曜';
+                badgeText = bon ? 'お盆休みで土曜ダイヤ' : '土曜';
             }
             if (dayType === '日祝') {
                 dateClass += ' holiday';
@@ -3057,7 +3057,7 @@
                 let cls='cal-day';
                 if(dw===0)cls+=' sun'; if(dw===6)cls+=' sat';
                 if(iso===todayIso)cls+=' today';
-                if(r&&(r.hol||r.isBon||r.bon))cls+=' hol';
+                if(r&&(r.hol||r.bon))cls+=' hol';
                 if(!r)cls+=' nodata';
 
                 let body='';
@@ -3091,7 +3091,7 @@
             const dt=new Date(iso+'T00:00:00');
             const DWJ=['日','月','火','水','木','金','土'];
             let badge='', bcls='hei';
-            if(r.isBon||r.bon){ badge='お盆(土曜ダイヤ)'; bcls='bon'; }
+            if(r.bon){ badge='お盆(土曜ダイヤ)'; bcls='bon'; }
             else if(r.hol){ badge='祝日'; bcls='dosun'; }
             else if(r.dayType==='土'){ badge='土曜'; bcls='dosun'; }
             else if(r.dayType==='日'||r.dayType==='日祝'){ badge='日祝'; bcls='dosun'; }
@@ -3137,7 +3137,7 @@
             }
 
             const hol = isHol(now);
-            const isBon = isObon(now);
+            const bon = isObon(now);
             const currentDayType = dayType(now);
             const matches = findData(num, currentDayType);
 
@@ -3146,7 +3146,7 @@
                 return;
             }
 
-            resultEl.innerHTML = buildDayCardHtml(num, `本日 ${getTodayString()}`, currentDayType, hol, isBon, matches);
+            resultEl.innerHTML = buildDayCardHtml(num, `本日 ${getTodayString()}`, currentDayType, hol, bon, matches);
         }
 
         /* 読み上げ中はボタンを「停止する」に変える。
@@ -3194,7 +3194,7 @@
 
             const now = new Date();
             const hol = isHol(now);
-            const isBon = isObon(now);
+            const bon = isObon(now);
             const currentDayType = dayType(now);
             const matches = findData(num, currentDayType);
 
@@ -3204,7 +3204,7 @@
             // 「日付 → 曜日 → ダイヤ番号」の順で、ダイヤ名は読まない。
             const _m = now.getMonth() + 1, _d = now.getDate();
             const _dw = ['日','月','火','水','木','金','土'][now.getDay()];
-            const _holLabel = isBon ? 'お盆休みで土曜ダイヤ' : (hol ? '祝日' : '');
+            const _holLabel = bon ? 'お盆休みで土曜ダイヤ' : (hol ? '祝日' : '');
             let speechText = `${_m}月${_d}日、${_dw}曜日${_holLabel}。${num}番ダイヤ。`;
             matches.forEach((m, idx) => {
                 if(matches.length > 1) speechText += `パターン${idx + 1}。`;
@@ -3247,12 +3247,12 @@
 
             while (start <= end) {
                 const hol = isHol(start);
-                const isBon = isObon(start);
+                const bon = isObon(start);
                 const currentDayType = dayType(start);
                 const rotatedDial = calcDial(start, num);
                 const matches = findData(rotatedDial, currentDayType);
                 const dateLabel = `${start.getMonth()+1}/${start.getDate()}（${daysOfWeek[start.getDay()]}）`;
-                rows.push({ iso: toISO(start), dateLabel, dayType: currentDayType, hol, isBon, matches, dial: rotatedDial });
+                rows.push({ iso: toISO(start), dateLabel, dayType: currentDayType, hol, bon, matches, dial: rotatedDial });
                 start.setDate(start.getDate() + 1);
             }
 
@@ -3277,7 +3277,7 @@
             let html = `<div class="res-summary">${rows.length}日間 ／ 勤務${workCnt}日 ／ 公休${offCnt}日</div>`;
             rows.forEach((r, idx) => {
                 // B案: 1枚ずつ順に現れるよう、カードごとに表示開始を少しずつ遅らせる
-                const card = buildDayCardHtml(r.dial, r.dateLabel, r.dayType, r.hol, r.isBon, r.matches, memoBlockHtml(r.iso, r.dial));
+                const card = buildDayCardHtml(r.dial, r.dateLabel, r.dayType, r.hol, r.bon, r.matches, memoBlockHtml(r.iso, r.dial));
                 html += card;
             });
             // C案: 合計労働時間は自動スクロールが止まる「結果の一番下」に出す
@@ -3330,7 +3330,7 @@
             rows.forEach(r => {
                 const isOff = r.matches.length === 0 || r.matches[0].start === '公休' || r.matches[0].dayType === '全';
                 text += `${r.dateLabel}、${r.dial}番。`;
-                if (r.isBon) text += 'お盆休みで土曜ダイヤ。';
+                if (r.bon) text += 'お盆休みで土曜ダイヤ。';
                 else if (r.hol) text += '祝日のため日曜ダイヤ。';
                 if (isOff) {
                     text += '公休。';
