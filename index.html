@@ -3200,9 +3200,12 @@
 
             if (matches.length === 0) return;
 
-            let speechText = `生駒ダイヤ、${num}番。`;
-            if (isBon) speechText += "本日はお盆休み期間のため、土曜ダイヤで運行します。";
-            else if (hol) speechText += "本日は祝日のため、日曜ダイヤで運行します。";
+            // 読み上げの書き出しは他のダイヤと揃える。
+            // 「日付 → 曜日 → ダイヤ番号」の順で、ダイヤ名は読まない。
+            const _m = now.getMonth() + 1, _d = now.getDate();
+            const _dw = ['日','月','火','水','木','金','土'][now.getDay()];
+            const _holLabel = isBon ? 'お盆休みで土曜ダイヤ' : (hol ? '祝日' : '');
+            let speechText = `${_m}月${_d}日、${_dw}曜日${_holLabel}。${num}番ダイヤ。`;
             matches.forEach((m, idx) => {
                 if(matches.length > 1) speechText += `パターン${idx + 1}。`;
                 if (m.start === "公休" || m.dayType === "全") {
