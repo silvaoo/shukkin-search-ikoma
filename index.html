@@ -1659,220 +1659,58 @@
            元データ(生駒ダイヤ出退表 令和8年3月14日改正)より入力。
            dayType: "平"=平日 / "土"=土曜 / "日"=日曜・祝日
            ========================================================= */
-        const ikomaDaiyaData = [
-            { id: 1, dayType: "平", start: "6:24", memo: "", end: "19:17", workTime: "9:52" },
-            { id: 1, dayType: "土", start: "6:15", memo: "", end: "18:27", workTime: "9:24" },
-            { id: 1, dayType: "日", start: "6:15", memo: "", end: "18:27", workTime: "9:24" },
-            { id: 2, dayType: "平", start: "5:47", memo: "帝大", end: "17:09", workTime: "9:06" },
-            { id: 2, dayType: "平", start: "5:47", memo: "", end: "8:17", workTime: "2:17" },
-            { id: 2, dayType: "土", start: "6:10", memo: "", end: "14:54", workTime: "6:24" },
-            { id: 2, dayType: "日", start: "6:10", memo: "", end: "14:54", workTime: "6:24" },
-            { id: 3, dayType: "平", start: "5:38", memo: "", end: "14:53", workTime: "8:23" },
-            { id: 3, dayType: "土", start: "5:22", memo: "", end: "14:40", workTime: "7:20" },
-            { id: 3, dayType: "日", start: "6:18", memo: "", end: "14:40", workTime: "6:24" },
-            { id: 4, dayType: "平", start: "5:25", memo: "", end: "10:40", workTime: "5:15" },
-            { id: 4, dayType: "土", start: "10:00", memo: "予備", end: "19:10", workTime: "7:39" },
-            { id: 4, dayType: "日", start: "10:00", memo: "予備", end: "19:10", workTime: "7:39" },
-            { id: 5, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 5, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 5, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 6, dayType: "平", start: "6:25 / 12:04", memo: "", end: "17:45 / 22:03", workTime: "5:17 / 3:43" },
-            { id: 6, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 6, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 7, dayType: "平", start: "18:17", memo: "", end: "24:23", workTime: "5:29" },
-            { id: 7, dayType: "土", start: "18:33", memo: "", end: "24:16", workTime: "5:00" },
-            { id: 7, dayType: "日", start: "18:33", memo: "", end: "24:16", workTime: "5:00" },
-            { id: 8, dayType: "平", start: "16:10", memo: "帝大シャトル", end: "24:28", workTime: "8:07" },
-            { id: 8, dayType: "平", start: "16:53", memo: "", end: "24:28", workTime: "7:24" },
-            { id: 8, dayType: "土", start: "16:38", memo: "", end: "24:14", workTime: "6:08" },
-            { id: 8, dayType: "日", start: "16:38", memo: "", end: "24:14", workTime: "6:08" },
-            { id: 9, dayType: "平", start: "11:59", memo: "", end: "22:34", workTime: "9:19" },
-            { id: 9, dayType: "土", start: "12:48", memo: "", end: "21:25", workTime: "7:08" },
-            { id: 9, dayType: "日", start: "12:48", memo: "", end: "21:25", workTime: "7:06" },
-            { id: 10, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 10, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 10, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 11, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 11, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 11, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 12, dayType: "平", start: "6:29", memo: "", end: "20:19", workTime: "9:18" },
-            { id: 12, dayType: "土", start: "7:56", memo: "", end: "19:39", workTime: "9:22" },
-            { id: 12, dayType: "日", start: "7:56", memo: "", end: "19:39", workTime: "9:22" },
-            { id: 13, dayType: "平", start: "6:34 / 8:57", memo: "近大", end: "14:43 / 21:45", workTime: "2:23 / 6:27" },
-            { id: 13, dayType: "平", start: "6:34 / 8:12", memo: "", end: "14:43 / 21:45", workTime: "1:38 / 6:27" },
-            { id: 13, dayType: "土", start: "6:39 / 9:52", memo: "", end: "15:41 / 21:34", workTime: "3:00 / 4:59" },
-            { id: 13, dayType: "日", start: "6:39 / 9:52", memo: "", end: "15:41 / 21:34", workTime: "3:00 / 4:59" },
-            { id: 14, dayType: "平", start: "5:54", memo: "", end: "16:10", workTime: "9:24" },
-            { id: 14, dayType: "土", start: "7:50", memo: "", end: "15:39", workTime: "6:23" },
-            { id: 14, dayType: "日", start: "9:30", memo: "", end: "15:39", workTime: "5:08" },
-            { id: 15, dayType: "平", start: "5:19", memo: "手入れ", end: "12:20", workTime: "6:13" },
-            { id: 15, dayType: "土", start: "4:58", memo: "手入れ", end: "12:15", workTime: "6:27" },
-            { id: 15, dayType: "日", start: "5:43", memo: "手入れ", end: "12:15", workTime: "5:42" },
-            { id: 16, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 16, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 16, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 17, dayType: "平", start: "6:34 / 10:53", memo: "", end: "16:45 / 22:10", workTime: "4:08 / 4:55" },
-            { id: 17, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 17, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 18, dayType: "平", start: "16:32", memo: "", end: "23:18", workTime: "6:05" },
-            { id: 18, dayType: "土", start: "16:38", memo: "", end: "24:19", workTime: "6:34" },
-            { id: 18, dayType: "日", start: "16:38", memo: "", end: "24:19", workTime: "6:34" },
-            { id: 19, dayType: "平", start: "15:03", memo: "宛の木", end: "24:01", workTime: "7:56" },
-            { id: 19, dayType: "平", start: "15:50", memo: "", end: "24:01", workTime: "7:20" },
-            { id: 19, dayType: "土", start: "15:05", memo: "", end: "23:50", workTime: "7:08" },
-            { id: 19, dayType: "日", start: "15:05", memo: "", end: "23:50", workTime: "7:08" },
-            { id: 20, dayType: "平", start: "15:05", memo: "", end: "22:44", workTime: "6:40" },
-            { id: 20, dayType: "土", start: "14:05", memo: "", end: "22:34", workTime: "6:45" },
-            { id: 20, dayType: "日", start: "14:05", memo: "", end: "22:34", workTime: "6:45" },
-            { id: 21, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 21, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 21, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 22, dayType: "平", start: "16:03", memo: "", end: "24:08", workTime: "7:11" },
-            { id: 22, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 22, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 23, dayType: "平", start: "15:49", memo: "帝大", end: "24:26", workTime: "7:13" },
-            { id: 23, dayType: "平", start: "16:25", memo: "", end: "24:26", workTime: "6:37" },
-            { id: 23, dayType: "土", start: "15:55", memo: "", end: "23:07", workTime: "6:12" },
-            { id: 23, dayType: "日", start: "15:55", memo: "", end: "23:07", workTime: "6:12" },
-            { id: 24, dayType: "平", start: "16:07", memo: "", end: "24:38", workTime: "6:56" },
-            { id: 24, dayType: "土", start: "17:57", memo: "", end: "24:04", workTime: "5:24" },
-            { id: 24, dayType: "日", start: "17:57", memo: "", end: "24:04", workTime: "5:24" },
-            { id: 25, dayType: "平", start: "15:45", memo: "帝大", end: "24:38", workTime: "7:50" },
-            { id: 25, dayType: "平", start: "16:18", memo: "", end: "24:38", workTime: "7:28" },
-            { id: 25, dayType: "土", start: "15:59", memo: "", end: "23:14", workTime: "5:38" },
-            { id: 25, dayType: "日", start: "15:59", memo: "", end: "23:14", workTime: "5:38" },
-            { id: 26, dayType: "平", start: "12:47", memo: "", end: "22:51", workTime: "9:01" },
-            { id: 26, dayType: "土", start: "14:19", memo: "", end: "23:04", workTime: "6:56" },
-            { id: 26, dayType: "日", start: "14:19", memo: "", end: "23:04", workTime: "6:54" },
-            { id: 27, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 27, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 27, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 28, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 28, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 28, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 29, dayType: "平", start: "6:54", memo: "", end: "20:17", workTime: "8:38" },
-            { id: 29, dayType: "土", start: "5:58 / 9:34", memo: "", end: "15:02 / 20:20", workTime: "3:10 / 4:37" },
-            { id: 29, dayType: "日", start: "5:58 / 9:34", memo: "", end: "15:02 / 20:20", workTime: "3:10 / 4:37" },
-            { id: 30, dayType: "平", start: "5:58", memo: "帝大", end: "17:05", workTime: "9:31" },
-            { id: 30, dayType: "平", start: "5:58", memo: "", end: "14:32", workTime: "7:20" },
-            { id: 30, dayType: "土", start: "5:35", memo: "", end: "17:00", workTime: "8:32" },
-            { id: 30, dayType: "日", start: "5:35", memo: "", end: "17:00", workTime: "8:32" },
-            { id: 31, dayType: "平", start: "5:16", memo: "帝大", end: "15:11", workTime: "8:22" },
-            { id: 31, dayType: "平", start: "5:16", memo: "", end: "15:11", workTime: "8:22" },
-            { id: 31, dayType: "土", start: "5:08", memo: "", end: "13:54", workTime: "7:41" },
-            { id: 31, dayType: "日", start: "5:38", memo: "", end: "13:54", workTime: "7:24" },
-            { id: 32, dayType: "平", start: "6:05", memo: "", end: "9:24", workTime: "3:19" },
-            { id: 32, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 32, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 33, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 33, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 33, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 34, dayType: "平", start: "6:07 / 11:49", memo: "", end: "16:37 / 21:18", workTime: "5:01 / 4:30" },
-            { id: 34, dayType: "土", start: "5:38 / 9:33", memo: "", end: "16:01 / 20:18", workTime: "3:55 / 4:06" },
-            { id: 34, dayType: "日", start: "5:38 / 9:33", memo: "", end: "16:22 / 20:18", workTime: "3:55 / 3:45" },
-            { id: 35, dayType: "平", start: "6:49", memo: "", end: "17:36", workTime: "8:55" },
-            { id: 35, dayType: "土", start: "6:03", memo: "", end: "15:17", workTime: "7:05" },
-            { id: 35, dayType: "日", start: "6:03", memo: "", end: "15:17", workTime: "7:05" },
-            { id: 36, dayType: "平", start: "5:38", memo: "帝大", end: "17:53", workTime: "9:52" },
-            { id: 36, dayType: "平", start: "5:38", memo: "", end: "17:53", workTime: "9:58" },
-            { id: 36, dayType: "土", start: "5:58", memo: "", end: "15:54", workTime: "8:09" },
-            { id: 36, dayType: "日", start: "5:58", memo: "", end: "15:54", workTime: "8:09" },
-            { id: 37, dayType: "平", start: "5:20", memo: "帝大", end: "11:57", workTime: "6:04" },
-            { id: 37, dayType: "平", start: "5:20", memo: "", end: "10:13", workTime: "4:42" },
-            { id: 37, dayType: "土", start: "5:37", memo: "", end: "13:45", workTime: "6:57" },
-            { id: 37, dayType: "日", start: "6:49", memo: "", end: "12:40", workTime: "4:40" },
-            { id: 38, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 38, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 38, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 39, dayType: "平", start: "6:02 / 9:32", memo: "", end: "13:58 / 21:54", workTime: "3:30 / 6:29" },
-            { id: 39, dayType: "土", start: "6:42 / 10:12", memo: "", end: "16:02 / 21:29", workTime: "3:30 / 4:52" },
-            { id: 39, dayType: "日", start: "6:42 / 10:12", memo: "", end: "16:02 / 21:29", workTime: "3:30 / 4:52" },
-            { id: 40, dayType: "平", start: "15:40", memo: "", end: "23:46", workTime: "7:01" },
-            { id: 40, dayType: "土", start: "15:40", memo: "", end: "23:03", workTime: "6:12" },
-            { id: 40, dayType: "日", start: "15:40", memo: "", end: "23:03", workTime: "6:12" },
-            { id: 41, dayType: "平", start: "11:55", memo: "", end: "22:13", workTime: "8:37" },
-            { id: 41, dayType: "土", start: "13:17", memo: "", end: "21:04", workTime: "6:51" },
-            { id: 41, dayType: "日", start: "13:17", memo: "", end: "21:04", workTime: "6:51" },
-            { id: 42, dayType: "平", start: "11:58", memo: "", end: "21:00", workTime: "7:59" },
-            { id: 42, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 42, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 43, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 43, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 43, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 44, dayType: "平", start: "6:14 / 9:36", memo: "近大", end: "16:25 / 22:06", workTime: "3:22 / 5:06" },
-            { id: 44, dayType: "平", start: "6:14 / 8:28", memo: "", end: "16:25 / 22:06", workTime: "2:14 / 5:06" },
-            { id: 44, dayType: "土", start: "8:11 / 10:43", memo: "", end: "16:07 / 22:07", workTime: "2:21 / 5:05" },
-            { id: 44, dayType: "日", start: "8:11 / 10:43", memo: "", end: "16:07 / 22:07", workTime: "2:21 / 5:05" },
-            { id: 45, dayType: "平", start: "17:46", memo: "", end: "24:47", workTime: "6:20" },
-            { id: 45, dayType: "土", start: "17:08", memo: "", end: "23:43", workTime: "5:06" },
-            { id: 45, dayType: "日", start: "17:08", memo: "", end: "23:43", workTime: "5:06" },
-            { id: 46, dayType: "平", start: "14:18", memo: "帝大", end: "24:27", workTime: "8:40" },
-            { id: 46, dayType: "平", start: "16:16", memo: "", end: "24:27", workTime: "7:04" },
-            { id: 46, dayType: "土", start: "16:22", memo: "", end: "23:29", workTime: "5:59" },
-            { id: 46, dayType: "日", start: "16:22", memo: "", end: "23:29", workTime: "5:59" },
-            { id: 47, dayType: "平", start: "15:55", memo: "", end: "23:47", workTime: "6:21" },
-            { id: 47, dayType: "土", start: "10:00", memo: "予備", end: "19:10", workTime: "7:39" },
-            { id: 47, dayType: "日", start: "10:00", memo: "予備", end: "19:10", workTime: "7:39" },
-            { id: 48, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 48, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 48, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 49, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 49, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 49, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 50, dayType: "平", start: "6:41", memo: "イモ山", end: "19:15", workTime: "10:00" },
-            { id: 50, dayType: "平", start: "7:20", memo: "", end: "19:15", workTime: "9:58" },
-            { id: 50, dayType: "土", start: "7:49", memo: "", end: "19:07", workTime: "8:24" },
-            { id: 50, dayType: "日", start: "7:49", memo: "", end: "19:07", workTime: "8:13" },
-            { id: 51, dayType: "平", start: "5:01 / 9:22", memo: "近大", end: "14:42 / 19:35", workTime: "4:21 / 4:09" },
-            { id: 51, dayType: "平", start: "5:01 / 8:13", memo: "", end: "14:42 / 19:35", workTime: "3:12 / 4:09" },
-            { id: 51, dayType: "土", start: "5:12", memo: "", end: "16:41", workTime: "9:08" },
-            { id: 51, dayType: "日", start: "5:48", memo: "", end: "16:51", workTime: "8:42" },
-            { id: 52, dayType: "平", start: "6:23", memo: "", end: "19:28", workTime: "9:46" },
-            { id: 52, dayType: "土", start: "5:49", memo: "帝大", end: "16:30", workTime: "8:11" },
-            { id: 52, dayType: "土", start: "5:49", memo: "", end: "16:30", workTime: "6:57" },
-            { id: 52, dayType: "日", start: "5:49", memo: "", end: "16:30", workTime: "7:50" },
-            { id: 53, dayType: "平", start: "5:36", memo: "帝大", end: "9:40", workTime: "3:53" },
-            { id: 53, dayType: "平", start: "5:36", memo: "", end: "8:31", workTime: "2:55" },
-            { id: 53, dayType: "土", start: "5:35", memo: "", end: "9:41", workTime: "4:06" },
-            { id: 53, dayType: "日", start: "5:35", memo: "", end: "9:41", workTime: "4:06" },
-            { id: 54, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 54, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 54, dayType: "日", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 55, dayType: "平", start: "5:13", memo: "", end: "16:27", workTime: "9:50" },
-            { id: 55, dayType: "土", start: "6:48", memo: "", end: "19:47", workTime: "8:48" },
-            { id: 55, dayType: "日", start: "6:48", memo: "", end: "19:47", workTime: "8:48" },
-            { id: 56, dayType: "平", start: "6:31 / 10:43", memo: "", end: "16:48 / 21:26", workTime: "3:50 / 4:27" },
-            { id: 56, dayType: "土", start: "6:50 / 11:29", memo: "", end: "17:58 / 21:28", workTime: "3:58 / 3:06" },
-            { id: 56, dayType: "日", start: "6:50 / 11:29", memo: "", end: "17:58 / 21:28", workTime: "3:58 / 3:06" },
-            { id: 57, dayType: "平", start: "5:38", memo: "帝大・あすか野スクール", end: "16:33", workTime: "9:30" },
-            { id: 57, dayType: "平", start: "5:38", memo: "あすか野スクール", end: "16:33", workTime: "9:11" },
-            { id: 57, dayType: "平", start: "5:38", memo: "帝大", end: "14:56", workTime: "7:53" },
-            { id: 57, dayType: "平", start: "5:38", memo: "", end: "14:56", workTime: "7:34" },
-            { id: 57, dayType: "土", start: "6:34", memo: "", end: "15:41", workTime: "7:14" },
-            { id: 57, dayType: "日", start: "6:34", memo: "", end: "15:41", workTime: "7:13" },
-            { id: 58, dayType: "平", start: "5:45", memo: "帝大・手入れ", end: "15:42", workTime: "8:52" },
-            { id: 58, dayType: "平", start: "5:45", memo: "手入れ", end: "15:42", workTime: "8:52" },
-            { id: 58, dayType: "土", start: "5:16", memo: "手入れ", end: "15:49", workTime: "8:06" },
-            { id: 58, dayType: "日", start: "5:16", memo: "手入れ", end: "15:49", workTime: "8:06" },
-            { id: 59, dayType: "平", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 59, dayType: "土", start: "公休", memo: "", end: "", workTime: "" },
-            { id: 59, dayType: "日", start: "公休", memo: "", end: "", workTime: "" }
-        ];
+
+        /* ==== ダイヤのデータを読み込む ====
+           勤務データ・祝日・お盆・基準日は dia-ikoma.json にまとめてある。
+           ダイヤ改正のときは、この JSON だけを差し替えればよい。
+
+           読み込みに失敗するとアプリが使えないので、
+           通信できないときのために、いったん端末に控えておく。 */
+        const DIA_JSON = './dia-ikoma.json';
+        const DIA_CACHE_KEY = 'ikoma-dia-cache';
+
+        function applyDiaData(d){
+          if(Array.isArray(d.rows)) ikomaDaiyaData = d.rows;
+          HOLIDAYS = new Set(d.holidays || []);
+          BON_SPECIAL_DATES = d.obon || [];
+          if(d.meta){
+            if(d.meta.baseDate){
+              const p = String(d.meta.baseDate).split('-').map(Number);
+              BASE_DATE = new Date(p[0], p[1]-1, p[2]);
+            }
+            if(d.meta.baseDial) BASE_DIAL = d.meta.baseDial;
+            if(d.meta.cycle)    TOTAL_DIALS = d.meta.cycle;
+          }
+        }
+
+        async function loadDiaData(){
+          // まず端末に控えてあるものを使う（通信できなくても動くように）
+          try{
+            const cached = localStorage.getItem(DIA_CACHE_KEY);
+            if(cached) applyDiaData(JSON.parse(cached));
+          }catch(e){}
+
+          try{
+            const res = await fetch(DIA_JSON + '?v=' + Date.now());
+            if(res.ok){
+              const d = await res.json();
+              applyDiaData(d);
+              try{ localStorage.setItem(DIA_CACHE_KEY, JSON.stringify(d)); }catch(e){}
+              return true;
+            }
+          }catch(e){}
+          return ikomaDaiyaData.length > 0;   // 控えがあればそれで動かす
+        }
+
+        let ikomaDaiyaData = [];   // 中身は dia-ikoma.json から入れる（下の loadDiaData で読み込む）
 
         /* =========================================================
            祝日一覧(国立天文台「暦要項」ベース)。祝日は日曜ダイヤ扱いとする。
            ========================================================= */
-        const HOLIDAYS = new Set([
-            '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29',
-            '2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11',
-            '2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23',
-            '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22',
-            '2027-04-29','2027-05-03','2027-05-04','2027-05-05','2027-07-19','2027-08-11',
-            '2027-09-20','2027-09-23','2027-10-11','2027-11-03','2027-11-23'
-        ]);
+        let HOLIDAYS = new Set();   // 中身は dia-ikoma.json から入れる
 
         /* お盆特例: 2026年8月13日〜15日は「お盆休みで土曜ダイヤ」扱い(BAダイヤと同じ運用) */
-        const BON_SPECIAL_DATES = ["2026-08-13", "2026-08-14", "2026-08-15"];
+        let BON_SPECIAL_DATES = [];   // 中身は dia-ikoma.json から入れる
 
         function toDateKey(dateObj) {
             const y = dateObj.getFullYear();
@@ -1907,9 +1745,9 @@
            2. calcDial: 実際に入力された「今日の番号」を起点に、
               期間検索の対象日ごとの番号を計算する(1日+1、59を超えたら1に戻る)
            ========================================================= */
-        const BASE_DATE = new Date(2026, 6, 13); // 2026年7月13日(月) = 基準日
-        const BASE_DIAL = 8; // 基準日のダイヤ番号
-        const TOTAL_DIALS = 59; // 生駒ダイヤの総番号数(1〜59)
+        let BASE_DATE = new Date();   // 中身は dia-ikoma.json から入れる
+        let BASE_DIAL = 1;
+        let TOTAL_DIALS = 1;
 
         function calcAutoDial(targetDate) {
             const t = new Date(targetDate);
@@ -3719,7 +3557,8 @@
             document.getElementById('sourceModal').classList.remove('active');
         }
 
-        window.onload = function() {
+        window.onload = async function() {
+            await loadDiaData();   // 先にダイヤのデータを読み込む
             updateClock(); setInterval(updateClock,1000); // 時計を開始
             updateNotifyUI(); // 通知ボタンの表示を復元
             announceRelease(); // ダイヤ改正・新機能の時だけ通知を出す
