@@ -1244,6 +1244,14 @@
     <!-- 花火アニメーション描画用キャンバス -->
     <canvas id="fireworks-canvas"></canvas>
 
+    <!-- 新バージョン検知時の更新案内バナー -->
+    <button id="update-banner" class="notice-banner update-banner" onclick="handleUpdateClick()" style="display:none;">
+        🔄 新しいバージョンがあります。タップで更新
+    </button>
+
+    <!-- 通知を受け取っていない人にだけ出す帯。許可すると消える -->
+    <div id="push-bar" onclick="pushBarTap(event)">🔔 通知を受け取る<span class="x" onclick="pushBarClose(event)">✕</span></div>
+
     <header>
         <button id="share-button" onclick="shareApp()" aria-label="アプリを共有">📤</button>
         <div class="header-text">
@@ -1258,13 +1266,6 @@
         📲 アプリとしてインストール
     </button>
 
-    <!-- 新バージョン検知時の更新案内バナー -->
-    <button id="update-banner" class="notice-banner update-banner" onclick="handleUpdateClick()" style="display:none;">
-        🔄 新しいバージョンがあります。タップで更新
-    </button>
-
-    <!-- 通知を受け取っていない人にだけ出す帯。許可すると消える -->
-    <div id="push-bar" onclick="pushBarTap(event)">🔔 通知を受け取る<span class="x" onclick="pushBarClose(event)">✕</span></div>
 
     <div class="card card-accent-yellow">
         <div class="card-title today-clock-title" id="today-title">本日は—</div>
@@ -2008,7 +2009,7 @@
 const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗した回数
         /* 帯を出し分けるための版。sw.js の版と合わせて上げる。
            これが変わると「更新された」とみなして、もう一度だけ帯を出す。 */
-        const APP_VERSION   = 'v110';
+        const APP_VERSION   = 'v111';
 
         /* 宛先をサーバーに預ける（すでにあれば上書き） */
                 /* 宛先をサーバーに預ける（すでにあれば上書き）
