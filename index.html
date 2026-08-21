@@ -623,6 +623,15 @@
         .badge-sat  { background: rgba(0, 210, 211, 0.12); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); }
         .badge-hday { background: rgba(255, 77, 77, 0.12); color: #ff4d4d; border: 1px solid #ff4d4d; }
 
+        /* 今日のカードの見出し。学園前A・北大和C・予備と同じ形にそろえる。
+           番号と日付を1行にまとめ、番号だけを大きく見せる。 */
+        /* 公休のときの「🎉 公休」を目立たせる（他のダイヤのアプリと同じ） */
+        .ok-text   { color: #1dd1a1; font-weight: 700; }
+        .warn-text { color: #ff4d4d; font-weight: 700; }
+
+        .today-head { margin-bottom: 8px; color: var(--text-color); font-size: 13px; }
+        .today-head b { color: var(--accent-yellow); font-size: 20px; }
+
         .day-dial {
             font-size: 26px;
             font-weight: 900;
@@ -1988,7 +1997,7 @@
 const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗した回数
         /* 帯を出し分けるための版。sw.js の版と合わせて上げる。
            これが変わると「更新された」とみなして、もう一度だけ帯を出す。 */
-        const APP_VERSION   = 'v108';
+        const APP_VERSION   = 'v109';
 
         /* 宛先をサーバーに預ける（すでにあれば上書き） */
                 /* 宛先をサーバーに預ける（すでにあれば上書き）
@@ -2548,6 +2557,60 @@ function showToast(msg) {
             if(!isSplitShift(m)) return `出勤、${m.start}。退勤、${m.end}。労働時間は ${m.workTime} です。`;
             const {s,e,w}=splitParts(m);
             return `前半、${s[0]}から${s[1]}。後半、${e[0]}から${e[1]}。労働時間は前半${w[0]||''}、後半${w[1]||''}です。`;
+        }
+
+        /* 今日のカードを描く。学園前A・北大和C・予備と同じ形にそろえてある。
+
+           検索結果のカード（下の buildDayCardHtml）とは作りが違う:
+             今日   … 番号と日付を1行にまとめ、番号だけ大きく見せる
+             検索結果… 日付・曜日の印・大きい番号を段組みで見せる
+           他のダイヤのアプリもこの形なので、見た目を合わせるために分けている。 */
+        function buildTodayCardHtml(dial, dayType, hol, bon, matches) {
+            const now = new Date();
+            const md = `${now.getMonth() + 1}/${now.getDate()}`;
+            // 曜日の見せ方は他のダイヤのアプリと同じにする。
+            // 実際の曜日名を出し、お盆と祝日はその旨を添える。
+            const dw = ['日','月','火','水','木','金','土'][now.getDay()];
+            const dtLabel = bon ? `${dw}（お盆休みで土曜ダイヤ）`
+                          : hol ? `${dw}・祝`
+                          : dw;
+
+            const isOff = matches.length === 0
+                       || matches[0].start === '公休'
+                       || matches[0].dayType === '全';
+            // 公休の日は1行で伝える（他のダイヤのアプリと同じ）
+            if (isOff) {
+                return `<b>${dial}番ダイヤ</b> → ${md}（${dtLabel}）は <span class="ok-text">🎉 公休</span> です`;
+            }
+
+            const head = `<div class="today-head"><b>${dial}番ダイヤ</b> ／ ${md}（${dtLabel}）</div>`;
+
+            const body = matches.map(function (m, idx) {
+                const noteHtml = m.memo ? `<div class="today-note">📌 ${m.memo}</div>` : '';
+                const divider = idx > 0 ? '<div class="pattern-divider"></div>' : '';
+                const s = String(m.start).split('/').map(x => x.trim());
+                const e = String(m.end).split('/').map(x => x.trim());
+                const w = String(m.workTime).split('/').map(x => x.trim());
+                const isSplit = s.length >= 2 && e.length >= 2;
+                let timeHtml, workHtml, valCls;
+                if (isSplit) {
+                    valCls = 'is-split';
+                    timeHtml = `<span class="sp-row"><span class="sp-lb">前半</span>${s[0]}〜${s[1]}</span>`
+                             + `<span class="sp-row"><span class="sp-lb">後半</span>${e[0]}〜${e[1]}</span>`;
+                    workHtml = `<span class="sp-row"><span class="sp-lb">前半</span>${w[0] || ''}</span>`
+                             + `<span class="sp-row"><span class="sp-lb">後半</span>${w[1] || ''}</span>`;
+                } else {
+                    valCls = 'is-day';
+                    timeHtml = `${m.start} 〜 ${m.end}`;
+                    workHtml = `${m.workTime}`;
+                }
+                return divider + `<div class="day-boxes today-boxes">
+                    <div class="day-box"><div class="day-box-label">出退勤時間</div><div class="day-box-val day-box-val-time ${valCls}">${timeHtml}</div></div>
+                    <div class="day-box"><div class="day-box-label">労働時間</div><div class="day-box-val day-box-val-work ${valCls}">${workHtml}</div></div>
+                </div>` + noteHtml;
+            }).join('');
+
+            return head + body;
         }
 
         function buildDayCardHtml(dial, dateLabel, dayType, hol, bon, matches, memoHtml) {
@@ -3452,7 +3515,9 @@ function showToast(msg) {
                 return;
             }
 
-            resultEl.innerHTML = buildDayCardHtml(num, `本日 ${getTodayString()}`, currentDayType, hol, bon, matches);
+            // 今日のカードは、他のダイヤと同じ「番号と日付を1行」の形にする。
+            // 検索結果のカードはこれまでどおり buildDayCardHtml が描く。
+            resultEl.innerHTML = buildTodayCardHtml(num, currentDayType, hol, bon, matches);
         }
 
         /* 読み上げ中はボタンを「停止する」に変える。
