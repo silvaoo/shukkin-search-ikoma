@@ -1998,7 +1998,7 @@
 const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗した回数
         /* 帯を出し分けるための版。sw.js の版と合わせて上げる。
            これが変わると「更新された」とみなして、もう一度だけ帯を出す。 */
-        const APP_VERSION   = 'v113';
+        const APP_VERSION   = 'v114';
 
         /* 宛先をサーバーに預ける（すでにあれば上書き） */
                 /* 宛先をサーバーに預ける（すでにあれば上書き）
@@ -2175,7 +2175,7 @@ const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗し
         /* 版と端末の様子をフッターに出す。
            「通知が来ない」と言われたときに、入れ方や許可の状態を
            その場で確かめられるようにするため。 */
-        const APP_LABEL = 'バージョン 2.23';
+        const APP_LABEL = 'バージョン 2.24';
 
         function renderAppInfo(){
           const box = document.getElementById('appInfo');
@@ -2710,7 +2710,7 @@ function showToast(msg) {
         function onDaiyaInput() {
             saveMyDial();   // 入れた番号を保存する
             searchToday();
-            launchFireworks();
+            launchFireworks(); rocketFirework();
             playSwoosh();
         }
 
@@ -3257,7 +3257,7 @@ function showToast(msg) {
 
           boomSound();                       // バーン！
           if(navigator.vibrate)navigator.vibrate([60,40,90]);
-          launchFireworks();
+          launchFireworks(); rocketFirework();
           // 指定した期間の長さを「続けて検索」の基準にする
           try{
             const _sd=new Date(_selStart+'T00:00:00'), _ed=new Date(_selEnd+'T00:00:00');
@@ -3637,7 +3637,7 @@ function showToast(msg) {
 
             // 検索実行時のフィードバック(効果音＋花火＋バイブ)
             playSwoosh();
-            launchFireworks();
+            launchFireworks(); rocketFirework();
             if (navigator.vibrate) navigator.vibrate(40);
 
             let start = new Date(startStr);
@@ -3845,6 +3845,36 @@ function showToast(msg) {
         }
         window.addEventListener('resize', resizeFwCanvas);
         resizeFwCanvas();
+
+        /* 効果音の下ごしらえ。端末によっては最初の操作まで音を出せないので、
+           そのときは黙って何もしない。 */
+        let _audioCtx = null;
+        function getAudioCtx(){
+          try{
+            if(!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(_audioCtx.state === 'suspended') _audioCtx.resume();
+          }catch(e){}
+          return _audioCtx;
+        }
+
+        /* ロケット花火が上がるような音。花火と一緒に鳴らす。
+           （学園前A・北大和C・予備と同じもの） */
+        function rocketFirework(){
+          try{
+            const ctx = getAudioCtx();
+            if(!ctx) return;
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1400, now);
+            osc.frequency.exponentialRampToValueAtTime(500, now + 0.9);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+            osc.start(now); osc.stop(now + 0.9);
+          }catch(e){}
+        }
 
         function launchFireworks() {
             const colors = ['#ffd43b', '#00d2d3', '#ff6b6b', '#feca57', '#5f27cd', '#1dd1a1'];
