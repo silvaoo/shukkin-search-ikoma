@@ -473,7 +473,7 @@
             font-weight: 700;
             margin-bottom: 12px;
             border-left: 3px solid var(--accent-yellow);
-            padding-left: 8px; letter-spacing: 2px; display: flex; gap: 6px;}
+            padding-left: 8px; letter-spacing: 2px; display: flex; gap: 6px; align-items: center;}
 
         .input-group {
             display: flex;
@@ -1998,7 +1998,7 @@
 const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗した回数
         /* 帯を出し分けるための版。sw.js の版と合わせて上げる。
            これが変わると「更新された」とみなして、もう一度だけ帯を出す。 */
-        const APP_VERSION   = 'v114';
+        const APP_VERSION   = 'v115';
 
         /* 宛先をサーバーに預ける（すでにあれば上書き） */
                 /* 宛先をサーバーに預ける（すでにあれば上書き）
@@ -2175,7 +2175,7 @@ const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗し
         /* 版と端末の様子をフッターに出す。
            「通知が来ない」と言われたときに、入れ方や許可の状態を
            その場で確かめられるようにするため。 */
-        const APP_LABEL = 'バージョン 2.24';
+        const APP_LABEL = 'バージョン 2.25';
 
         function renderAppInfo(){
           const box = document.getElementById('appInfo');
@@ -3547,6 +3547,9 @@ function showToast(msg) {
             // 今日のカードは、他のダイヤと同じ「番号と日付を1行」の形にする。
             // 検索結果のカードはこれまでどおり buildDayCardHtml が描く。
             resultEl.innerHTML = buildTodayCardHtml(num, currentDayType, hol, bon, matches);
+            // 今日の勤務が出たときに、花火と音で知らせる
+            // （他のダイヤのアプリと同じ。読み込み直したときにも鳴る）
+            launchFireworks(); rocketFirework();
         }
 
         /* 読み上げ中はボタンを「停止する」に変える。
