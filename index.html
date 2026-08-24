@@ -74,7 +74,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 8px;
-            margin-bottom: 16px; text-align: center;}
+            margin-bottom: 6px; text-align: center;}
 
         header #share-button {
             width: 34px;
@@ -161,7 +161,8 @@
 .clock-ss { font-size: inherit; color: inherit; font-weight: inherit; }
 
         /* ヘッダーのダイヤ名だけテーマ色にして、アプリを見分けやすくする(サイズは据え置き) */
-        .dia-name { color: var(--accent-yellow); font-weight: 800; font-size: 13px; }
+        .dia-name { color: var(--accent-yellow); font-weight: 800; font-size: 16px; }
+        .dia-name-line { text-align: center; margin: 0 0 14px; }
 
         /* ==== 更新のお知らせ(通知)ボタン ==== */
         .notify-btn {
@@ -1259,7 +1260,7 @@
         <button id="share-button" onclick="shareApp()" aria-label="アプリを共有">📤</button>
         <div class="header-text">
             <h1><img class="mascot-icon" src="mascot.png" alt="出退勤検索くん">出退勤検索くん</h1>
-            <p><span class="dia-name">生駒ダイヤ</span> ／ 2026年3月14日改正 ／ 1〜59番</p>
+            <p>2026年3月14日改正 ／ 1〜59番</p>
         </div>
         <button id="theme-toggle" onclick="toggleTheme()" aria-label="ダーク/ライト切り替え">🌙</button>
     </header>
@@ -1268,6 +1269,9 @@
     <button id="install-banner" class="notice-banner install-banner" onclick="handleInstallClick()" style="display:none;">
         📲 アプリとしてインストール
     </button>
+
+    <!-- ダイヤ名（独立した行・中央表示） -->
+    <div class="dia-name-line"><span class="dia-name">生駒ダイヤ</span></div>
 
 
     <div class="card card-accent-yellow">
@@ -2190,7 +2194,7 @@ const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗し
         /* 版と端末の様子をフッターに出す。
            「通知が来ない」と言われたときに、入れ方や許可の状態を
            その場で確かめられるようにするため。 */
-        const APP_LABEL = 'バージョン 2.29';
+        const APP_LABEL = 'バージョン 2.30';
 
         function renderAppInfo(){
           const box = document.getElementById('appInfo');
