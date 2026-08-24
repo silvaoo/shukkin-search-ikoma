@@ -138,15 +138,25 @@
             transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
+        /* 「本日は8/21(金)…」の見出し。
+           共通の見出しより前に書いてあるため、そのままだと
+           あとから上書きされる。両方のクラスを並べて書いて、
+           書く順番に関係なくこちらが勝つようにしている。
+
+           左の縦棒は出さない。棒がなくなれば横並びにする必要もなく、
+           素直に1行で流す（横並びのままだと秒だけ位置がずれる）。 */
+        .card-title.today-clock-title,
         .today-clock-title {
-            font-size: 17px !important;
-            letter-spacing: 0.5px; font-weight: 800; margin-bottom: 12px
-          /* 「本日は」の左の縦棒は出さない。
-             棒がなくなるので横並びにする必要もなく、
-             素直に1行で流す（そうしないと秒だけ位置がずれる）。 */
-          border-left: none;
-          padding-left: 0;
-          display: block;}
+          font-size: 17px;
+          letter-spacing: 0.5px;
+          font-weight: 800;
+          margin-bottom: 12px;
+          /* 共通の見出しより前に書いてあるため、
+             確実にこちらを優先させる。 */
+          border-left: none !important;
+          padding-left: 0 !important;
+          display: block !important;
+        }
         /* 秒も本体と同じ大きさ・同じ色にする */
 .clock-ss { font-size: inherit; color: inherit; font-weight: inherit; }
 
@@ -2004,7 +2014,7 @@
 const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗した回数
         /* 帯を出し分けるための版。sw.js の版と合わせて上げる。
            これが変わると「更新された」とみなして、もう一度だけ帯を出す。 */
-        const APP_VERSION   = 'v116';
+        const APP_VERSION   = 'v117';
 
         /* 宛先をサーバーに預ける（すでにあれば上書き） */
                 /* 宛先をサーバーに預ける（すでにあれば上書き）
@@ -2181,7 +2191,7 @@ const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗し
         /* 版と端末の様子をフッターに出す。
            「通知が来ない」と言われたときに、入れ方や許可の状態を
            その場で確かめられるようにするため。 */
-        const APP_LABEL = 'バージョン 2.26';
+        const APP_LABEL = 'バージョン 2.27';
 
         function renderAppInfo(){
           const box = document.getElementById('appInfo');
