@@ -2194,7 +2194,7 @@ const PUSH_FAIL_KEY = 'ikoma-push-fail';    // 預け直しに続けて失敗し
         /* 版と端末の様子をフッターに出す。
            「通知が来ない」と言われたときに、入れ方や許可の状態を
            その場で確かめられるようにするため。 */
-        const APP_LABEL = 'バージョン 2.30';
+        const APP_LABEL = 'バージョン 2.31';
 
         function renderAppInfo(){
           const box = document.getElementById('appInfo');
@@ -2728,8 +2728,7 @@ function showToast(msg) {
         /* ===== ダイヤ番号入力時のハンドラ: 検索結果表示 + 花火 + 効果音 ===== */
         function onDaiyaInput() {
             saveMyDial();   // 入れた番号を保存する
-            searchToday();
-            launchFireworks(); rocketFirework();
+            searchToday();  // ※この中で花火と「ひゅーーん」を鳴らすので、ここでは鳴らさない（二重音の防止）
             playSwoosh();
         }
 
