@@ -1,5 +1,5 @@
 /* =========================================================
-   出退勤検索くん (BAダイヤ) - Service Worker
+   出退勤検索くん (生駒ダイヤ) - Service Worker
    目的:
    1. PWAとして「インストール可能」にする(Android Chromeの
       インストールバナー/プロンプトは、有効なfetchハンドラを持つ
@@ -10,7 +10,7 @@
 
 // キャッシュ名にバージョンを入れておき、更新のたびにこの値を変えることで
 // 新しいService Workerが「更新あり」と判定されるようにする
-const CACHE_VERSION = 'ikoma-shukkin-v123';
+const CACHE_VERSION = 'ikoma-shukkin-v124';
 const CACHE_FILES = [
     './',
     './index.html',
@@ -47,7 +47,8 @@ self.addEventListener('fetch', (event) => {
     // 外部ドメイン(Googleドライブのお知らせ画像など)は一切キャッシュしない。
     // ここを通すと古い画像が端末に残り続け、差し替えや削除が反映されなくなるため。
     if (new URL(event.request.url).origin !== self.location.origin) return;
-    // Service Worker本体はキャッシュしない。古い版が残ると更新が反映されないため。
+    // Service Worker本体(sw.js / firebase-messaging-sw.js)はキャッシュしない。
+    // 古い版が残ると、更新したのに反映されないという分かりにくい不具合になるため。
     if (/-?sw\.js$/.test(new URL(event.request.url).pathname)) return;
     event.respondWith(
         caches.match(event.request).then((cached) => {
